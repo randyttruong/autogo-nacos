@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloservice
+  template:
+    metadata:
+      labels:
+        app: helloservice
+    spec:
+      hostNetwork: true 
+      containers:
+      - name: helloservice
+        image: davidhu2023/helloservice
+        ports:
+        - containerPort: 8080
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloservice
+spec:
+  selector:
+    app: helloservice
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+
+---
+
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: ingress
+spec: 
+  rules: 
+  - host: test.helloservice.com
+    http: 
+      paths: 
+      - path: /
+        pathType: Prefix
+        backend: 
+          service:
+            name: helloservice
+            port:
+              number: 8080
+
+
+
+       

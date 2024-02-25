@@ -1,0 +1,54 @@
+{
+ "service": "checkoutservice",
+ "version": "v1",
+ "requests": [
+  {
+   "type": "grpc",
+   "url": "shippingservice",
+   "name": "shippingservice",
+   "path": "/hipstershop.ShippingService/GetQuote"
+  },
+  {
+   "type": "grpc",
+   "url": "cartservice",
+   "name": "cartservice",
+   "path": "/hipstershop.CartService/GetCart"
+  },
+  {
+   "type": "grpc",
+   "url": "cartservice",
+   "name": "cartservice",
+   "path": "/hipstershop.CartService/EmptyCart"
+  },
+  {
+   "type": "grpc",
+   "url": "productcatalogservice",
+   "name": "productcatalogservice",
+   "path": "/hipstershop.ProductCatalogService/GetProduct"
+  },
+  {
+   "type": "grpc",
+   "url": "currencyservice",
+   "name": "currencyservice",
+   "path": "/hipstershop.CurrencyService/Convert"
+  },
+  {
+   "type": "grpc",
+   "url": "paymentservice",
+   "name": "paymentservice",
+   "path": "/hipstershop.PaymentService/Charge"
+  },
+  {
+   "type": "grpc",
+   "url": "emailservice",
+   "name": "emailservice",
+   "path": "/hipstershop.EmailService/SendOrderConfirmation"
+  },
+  {
+   "type": "grpc",
+   "url": "shippingservice",
+   "name": "shippingservice",
+   "path": "/hipstershop.ShippingService/ShipOrder"
+  }
+ ]
+}

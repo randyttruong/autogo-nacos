@@ -1,0 +1,5 @@
+{
+ "service": "productcatalogservice",
+ "version": "v1",
+ "requests": null
+}
