@@ -3,117 +3,153 @@ package main
 import (
 	"go/ast"
 	"go/parser"
-  "go/token"
-	"strings"
+	"go/token"
+	"log"
+	// "fmt"
 )
 
-// parseGoFile extracts function calls from a Go file.
-// It returns a slice of function call names found in the file.
-func parseGoFile(filePath string, function_names []string) ([]string, error) {
-	var functionCalls []string
-
-	// Prepare the file set
+func parseFile(filePath string) *ast.File {
 	fset := token.NewFileSet()
-	// Parse the file
-	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	fileAst, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
 	if err != nil {
-			return nil, err
+		log.Fatalf("Failed to parse file %s: %v", filePath, err)
+	}
+	return fileAst
+}
+
+type customVisitor struct {
+	functionName string
+	wrapperFuncs []string
+}
+
+func NewCustomVisitor(functionName string, wrapperFuncs []string) *customVisitor {
+	return &customVisitor{functionName: functionName, wrapperFuncs: wrapperFuncs}
+}
+
+var wrapper = ""
+
+func (v *customVisitor) Visit(node ast.Node) ast.Visitor {
+	if node == nil {
+		return nil
 	}
 
-	// Walk through the AST
-	ast.Inspect(node, func(n ast.Node) bool {
-			// Check for function calls
-			callExpr, ok := n.(*ast.CallExpr)
-			if !ok {
-					return true // continue walking the AST
+	switch n := node.(type) {
+	case *ast.FuncDecl:
+		// Function declaration
+		wrapper = n.Name.Name
+		log.Printf("Function declaration: %s\n", n.Name.Name)
+
+		// case *ast.AssignStmt:
+		// 		// Variable assignment
+		// 		for i, lhs := range n.Lhs {
+	//     if len(n.Rhs) > i {
+	//         switch rhs := n.Rhs[i].(type) {
+	//         case *ast.BasicLit:
+	//             // LHS is usually an Ident or a more complex expression.
+	//             if ident, ok := lhs.(*ast.Ident); ok {
+	//                 fmt.Printf("Assignment - Name: %s, Value: %s\n", ident.Name, rhs.Value)
+	//             }
+	//         }
+	//     }
+	// 		}
+	// case *ast.ValueSpec:
+	// 		// Variable/constant declaration
+	// 		for i, name := range n.Names {
+	//     // Assuming values are BasicLits for simplicity. Adjust as needed.
+	//     if len(n.Values) > i {
+	//         switch val := n.Values[i].(type) {
+	//         case *ast.BasicLit:
+	//             fmt.Printf("Var Declaration - Name: %s, Value: %s\n", name.Name, val.Value)
+	//         }
+	//     }
+	// 		}
+	case *ast.CallExpr:
+		// Check if this callExpr matches the function of interest
+		// For simplicity, let's assume we're looking for a function named "TargetFunction"
+		if selExpr, ok := n.Fun.(*ast.SelectorExpr); ok {
+			log.Printf("%s ", selExpr.Sel.Name)
+			if selExpr.Sel.Name == v.functionName {
+				log.Printf("%s called\n", v.functionName)
+				log.Printf("%s is the wrapper\n", wrapper)
+				// 				}
 			}
-			switch fun := callExpr.Fun.(type) {
-			case *ast.Ident: // Simple function calls
-					functionCalls = append(functionCalls, fun.Name)
-			case *ast.SelectorExpr: // Qualified (package) function calls, e.g., pkg.Func
-					if id, ok := fun.X.(*ast.Ident); ok {
-							fullName := id.Name + "." + fun.Sel.Name
-							functionCalls = append(functionCalls, fullName)
+
+			// Check the package and function name
+			if selExpr.Sel.Name == "RegisterInstance" {
+				log.Printf("XXXXXX")
+				// Found a call to TargetFunction
+				// Analyze arguments here
+				for _, arg := range n.Args {
+					print(1)
+					switch arg := arg.(type) {
+					case *ast.BasicLit:
+						print(arg.Value) // This is a literal value; you can access it via arg.Value
+					case *ast.Ident:
+						print(arg.Name)
+					case *ast.SelectorExpr:
+						print(1)
+						// This is an identifier; you need to trace it
+						// Placeholder for tracing logic
 					}
+				}
+				// }
 			}
-			return true
-	})
-
-	return functionCalls, nil
+		}
+	}
+	return v
 }
 
+// case *ast.CallExpr:
+// 		// Function call
+// 		if fun, ok := n.Fun.(*ast.SelectorExpr); ok {
+// 				// Compare the function call to the specified function name
+// 				if fun.Sel.Name == v.functionName {
+// 						log.Printf("%s called\n", v.functionName)
+// 				}
+// 		}
+// }
 
+// if node == nil {
+// 	return nil
+// }
+//   // Remove the unused variable declaration
+//   var wrapper = ""
 
-
-// ArgumentType represents the type of an argument in a function call.
-type ArgumentType string
-
-const (
-    Literal  ArgumentType = "Literal"
-    Variable ArgumentType = "Variable"
-    Unknown  ArgumentType = "Unknown"
-)
-
-// FunctionCallInfo contains information about a function call.
-type FunctionCallInfo struct {
-    FunctionName string
-    Arguments    []ArgumentType
-}
-
-// parseGoFile analyzes function calls in a Go file, checking if their arguments are literals or variables.
-func parseGoFile(filePath string, functionNames []string) ([]FunctionCallInfo, error) {
-    var callsInfo []FunctionCallInfo
-    funcMap := make(map[string]bool)
-    for _, name := range functionNames {
-        funcMap[name] = true
-    }
-
-    fset := token.NewFileSet()
-    node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
-    if err != nil {
-        return nil, err
-    }
-
-    ast.Inspect(node, func(n ast.Node) bool {
-        callExpr, ok := n.(*ast.CallExpr)
-        if !ok {
-            return true
-        }
-
-        var funcName string
-        switch fun := callExpr.Fun.(type) {
-        case *ast.Ident:
-            funcName = fun.Name
-        case *ast.SelectorExpr:
-            if id, ok := fun.X.(*ast.Ident); ok {
-                funcName = id.Name + "." + fun.Sel.Name
-            }
-        }
-
-        if funcMap[funcName] {
-            var argTypes []ArgumentType
-            for _, arg := range callExpr.Args {
-                switch arg.(type) {
-                case *ast.BasicLit: // Literal values (e.g., string, number)
-                    argTypes = append(argTypes, Literal)
-                case *ast.Ident: // Identifiers (e.g., variable names)
-                    if strings.ToUpper(arg.(*ast.Ident).Name) == arg.(*ast.Ident).Name {
-                        // Assuming constants are in uppercase, you might want to check for constants differently.
-                        argTypes = append(argTypes, Literal)
-                    } else {
-                        argTypes = append(argTypes, Variable)
-                    }
-                default:
-                    argTypes = append(argTypes, Unknown)
-                }
-            }
-            callsInfo = append(callsInfo, FunctionCallInfo{
-                FunctionName: funcName,
-                Arguments:    argTypes,
-            })
-        }
-        return true
-    })
-
-    return callsInfo, nil
-}
+//   switch n := node.(type) {
+//   // case *ast.ValueSpec:
+// // 	for _, name := range n.Names {
+// // 		v.varDeclarations[name.Name] = n
+// // // 	}
+// case *ast.FuncDecl:
+//       wrapper = n.Name.Name
+// 	if n.Type.Params != nil {
+// 		for _, field := range n.Type.Params.List {
+// 			for _, name := range field.Names {
+// 				v.paramDeclarations[name.Name] = field
+// 			}
+// 		}
+// 	}
+// case *ast.CallExpr:
+// 	// Check if this callExpr matches the function of interest
+// 	// For simplicity, let's assume we're looking for a function named "TargetFunction"
+// 	if selExpr, ok := n.Fun.(*ast.SelectorExpr); ok {
+// 		if _, ok := selExpr.X.(*ast.Ident); ok {
+// 			// Check the package and function name
+// 			if selExpr.Sel.Name == "RegisterInstance" {
+// 				// Found a call to TargetFunction
+// 				// Analyze arguments here
+//                   for _, arg := range n.Args {
+//                       switch arg := arg.(type) {
+//                       case *ast.BasicLit:
+//                           print(arg.Value)// This is a literal value; you can access it via arg.Value
+//                       case *ast.Ident:
+//                           // This is an identifier; you need to trace it
+//                           // Placeholder for tracing logic
+//                       }
+//                   }
+// 			}
+// 		}
+// 	}
+// }
+// return v
+// };
