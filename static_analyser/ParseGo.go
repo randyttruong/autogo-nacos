@@ -76,26 +76,44 @@ func (v *customVisitor) Visit(node ast.Node) ast.Visitor {
 
 			// Check the package and function name
 			if selExpr.Sel.Name == "RegisterInstance" {
-				log.Printf("XXXXXX")
 				// Found a call to TargetFunction
 				// Analyze arguments here
 				for _, arg := range n.Args {
-					print(1)
 					switch arg := arg.(type) {
 					case *ast.BasicLit:
-						print(arg.Value) // This is a literal value; you can access it via arg.Value
+						log.Printf(arg.Value) // This is a literal value; you can access it via arg.Value
 					case *ast.Ident:
-						print(arg.Name)
-					case *ast.SelectorExpr:
-						print(1)
-						// This is an identifier; you need to trace it
-						// Placeholder for tracing logic
-					}
-				}
+						log.Printf(arg.Name)
+                    case *ast.SelectorExpr:
+                        log.Printf(arg.Sel.Name)
+                    case *ast.CompositeLit:
+                        if sel, ok := arg.Type.(*ast.SelectorExpr); ok {
+                            log.Printf(sel.Sel.Name)
+                            if sel.Sel.Name == "RegisterInstanceParam" {
+                                for _, elt := range arg.Elts {
+                                    if kv, ok := elt.(*ast.KeyValueExpr); ok {
+                                        if key, ok := kv.Key.(*ast.Ident); ok {
+                                            switch key.Name {
+                                            case "Ip", "Port", "ServiceName":
+                                                switch v := kv.Value.(type) {
+                                                case *ast.Ident:
+                                                    log.Printf("%s is a variable with value: %s", key.Name, v.Name)
+                                                case *ast.BasicLit:
+                                                    log.Printf("%s is a literal with value: %s", key.Name, v.Value)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                
+
+                        }
+                    }
 				// }
 			}
 		}
-	}
+	}}
 	return v
 }
 
