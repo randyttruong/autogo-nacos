@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"fmt"
@@ -7,9 +7,10 @@ import (
 	"go/token"
 	"log"
 	"strings"
+	t "static_analyser/pkg/types"
 )
 
-func parseFile(filePath string) *ast.File {
+func ParseFile(filePath string) *ast.File {
 	fset := token.NewFileSet()
 	fileAst, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
 	if err != nil {
@@ -38,8 +39,8 @@ func NewCustomVisitor(functionName string, wrapperFuncs []string) *customVisitor
 }
 
 // finds the wrappers for register instance
-func RegisterWrappers(node ast.Node) []RegisterInfo {
-	var instances []RegisterInfo
+func RegisterWrappers(node ast.Node) []t.RegisterInfo {
+	var instances []t.RegisterInfo
 	var paramNames = []string{}
 	var wrapper string
 	ast.Inspect(node, func(n ast.Node) bool {
@@ -67,7 +68,7 @@ func RegisterWrappers(node ast.Node) []RegisterInfo {
 						case *ast.CompositeLit:
 							if sel, ok := arg.Type.(*ast.SelectorExpr); ok {
 								if sel.Sel.Name == "RegisterInstanceParam" {
-									instance := RegisterInfo{}
+									instance := t.RegisterInfo{}
 									instance.Wrapper = wrapper
 									for _, elt := range arg.Elts {
 										if kv, ok := elt.(*ast.KeyValueExpr); ok {
@@ -81,7 +82,7 @@ func RegisterWrappers(node ast.Node) []RegisterInfo {
 														case "Ip":
 															for i, paramName := range paramNames {
 																if paramName == strings.TrimSpace(v.Name) {
-																	instance.IP = WrapperParams{i}
+																	instance.IP = t.WrapperParams{i}
 																}
 															}
 
@@ -89,14 +90,14 @@ func RegisterWrappers(node ast.Node) []RegisterInfo {
 															for i, paramName := range paramNames {
 
 																if paramName == strings.TrimSpace(v.Name) {
-																	instance.Port = WrapperParams{i}
+																	instance.Port = t.WrapperParams{i}
 																}
 															}
 
 														case "ServiceName":
 															for i, paramName := range paramNames {
 																if paramName == strings.TrimSpace(v.Name) {
-																	instance.ServiceName = WrapperParams{i}
+																	instance.ServiceName = t.WrapperParams{i}
 																}
 															}
 															// if instance.ServiceName == nil {
@@ -136,10 +137,10 @@ func RegisterWrappers(node ast.Node) []RegisterInfo {
 }
 
 // finds the invocation of the wrappers for register instance and resolves the arguments for serviceName, Ip, and Port
-func RegisterCalls(node ast.Node, wrapper RegisterInfo, service string) ([]string, []ServiceInfo) {
+func RegisterCalls(node ast.Node, wrapper t.RegisterInfo, service string) ([]string, []t.ServiceInfo) {
 	wrapperName := wrapper.Wrapper
 	serviceNames := []string{}
-	serviceInfos := []ServiceInfo{}
+	serviceInfos := []t.ServiceInfo{}
 	ast.Inspect(node, func(n ast.Node) bool {
 		if n == nil {
 			return false
@@ -170,27 +171,27 @@ func RegisterCalls(node ast.Node, wrapper RegisterInfo, service string) ([]strin
 					switch t := wrapper.ServiceName.(type) {
 					case string:
 						serviceName = t
-					case WrapperParams:
-						serviceName = strings.ReplaceAll(args[t.position], "\"", "")
+					case t.WrapperParams:
+						serviceName = strings.ReplaceAll(args[t.Position], "\"", "")
 					}
 					switch t := wrapper.IP.(type) {
 					case string:
 						ip = t
-					case WrapperParams:
-						ip = strings.ReplaceAll(args[t.position], "\"", "")
+					case t.WrapperParams:
+						ip = strings.ReplaceAll(args[t.Position], "\"", "")
 					}
 					switch t := wrapper.Port.(type) {
 					case string:
 						port = t
-					case WrapperParams:
-						port = strings.ReplaceAll(args[t.position], "\"", "")
+					case t.WrapperParams:
+						port = strings.ReplaceAll(args[t.Position], "\"", "")
 					}
-					serviceInfos = append(serviceInfos, ServiceInfo{service, ip, port})
+					serviceInfos = append(serviceInfos, t.ServiceInfo{service, ip, port})
 					serviceNames = append(serviceNames, serviceName)
 				}
 
 			}
-			// var instances []RegisterInfo
+			// var instances [].RegisterInfo
 
 		}
 		// return true
@@ -201,14 +202,14 @@ func RegisterCalls(node ast.Node, wrapper RegisterInfo, service string) ([]strin
 }
 
 // finds the wrappers for service discovery
-func DiscoveryWrappers(node ast.Node) []SelectInfo {
+func DiscoveryWrappers(node ast.Node) []t.SelectInfo {
 	// Different nacos SDK functions for service discovery
 	select_sdk := []string{"GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
 	select_params := []string{"GetServiceParam", "SelectAllInstancesParam", "SelectOneHealthyInstanceParam", "SelectInstancesParam", "SubscribeParam"}
 
 	var paramNames = []string{}
 	var wrapper string
-	var instances []SelectInfo
+	var instances []t.SelectInfo
 	ast.Inspect(node, func(n ast.Node) bool {
 		if n == nil {
 			return false
@@ -241,7 +242,7 @@ func DiscoveryWrappers(node ast.Node) []SelectInfo {
 
 								if contains(select_params, sel.Sel.Name) {
 
-									instance := SelectInfo{}
+									instance := t.SelectInfo{}
 									instance.Wrapper = wrapper
 									for _, elt := range arg.Elts {
 										if kv, ok := elt.(*ast.KeyValueExpr); ok {
@@ -251,7 +252,7 @@ func DiscoveryWrappers(node ast.Node) []SelectInfo {
 													case *ast.Ident:
 														for i, paramName := range paramNames {
 															if paramName == strings.TrimSpace(v.Name) {
-																instance.ServiceName = WrapperParams{i}
+																instance.ServiceName = t.WrapperParams{i}
 															}
 														}
 													case *ast.BasicLit:
@@ -276,7 +277,7 @@ func DiscoveryWrappers(node ast.Node) []SelectInfo {
 	return instances
 }
 
-func DiscoveryCalls(node ast.Node, wrapper SelectInfo, service string) []string {
+func DiscoveryCalls(node ast.Node, wrapper t.SelectInfo, service string) []string {
 	wrapperName := wrapper.Wrapper
 	serviceNames := []string{}
 
@@ -306,8 +307,8 @@ func DiscoveryCalls(node ast.Node, wrapper SelectInfo, service string) []string 
 					switch t := wrapper.ServiceName.(type) {
 					case string:
 						serviceName = t
-					case WrapperParams:
-						serviceName = strings.ReplaceAll(args[t.position], "\"", "")
+					case t.WrapperParams:
+						serviceName = strings.ReplaceAll(args[t.Position], "\"", "")
 					}
 
 					serviceNames = append(serviceNames, serviceName)

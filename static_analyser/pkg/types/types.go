@@ -1,4 +1,4 @@
-package main
+package types
 
 // Ports
 type Ports struct {
@@ -142,7 +142,7 @@ type RegisterInfo struct {
 
 type WrapperParams struct {
 	// position the argument is passed into the wrapper
-	position int
+	Position int
 }
 
 // Stores information about wrappers for selecting
@@ -153,7 +153,7 @@ type SelectInfo struct {
 
 // stores information about the service
 type ServiceInfo struct {
-	application string
+	Application string
 	IP          string
 	Port        string
 }

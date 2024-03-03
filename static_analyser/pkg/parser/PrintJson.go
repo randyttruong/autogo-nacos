@@ -1,12 +1,14 @@
-package main
+package parser
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	t "static_analyser/pkg/types"
+
 )
 
-func PrintJson(mani TCPManifest) {
+func PrintJson(mani t.TCPManifest) {
 	b, err := json.MarshalIndent(mani, "", " ")
 	if err != nil {
 		fmt.Println("error:", err)

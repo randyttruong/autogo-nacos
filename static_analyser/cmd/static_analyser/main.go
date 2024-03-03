@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	t "static_analyser/pkg/types"
+	"static_analyser/pkg/parser"
+	"static_analyser/pkg/util"
 )
 
 // set the output directory for manifests
@@ -21,10 +23,10 @@ var root = "../game_microservices/"
 
 func main() {
 	var validYamlFiles []string
-	parsedYamls := make(map[string]*Yaml2Go) // Initialize the map
+	parsedYamls := make(map[string]*t.Yaml2Go) // Initialize the map
 
 	// map to store the TCPManifest for each application
-	var application_to_manifest = make(map[string]TCPManifest)
+	var application_to_manifest = make(map[string]t.TCPManifest)
 
 	// store the files with nacos functions for each application
 	var nacos_files = make(map[string][]string)
@@ -34,10 +36,10 @@ func main() {
 
 	//store the information for each service registrated to nacos for each application
 	// maps application to service information
-	var service_directory = make(map[string]ServiceInfo)
+	var service_directory = make(map[string]t.ServiceInfo)
 
 	// store the service discovery calls to nacos for each application
-	var call_map = make(map[string][]TCPRequest)
+	var call_map = make(map[string][]t.TCPRequest)
 
 	// Walk thru all files in root dir and find yaml files with ApiVersion and Kind fields
 	// Parse YAML files and store in map with service name
@@ -46,7 +48,7 @@ func main() {
 			return err
 		}
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
-			conf, serviceName, err := ParseYaml(path) // Correctly handle returned values
+			conf, serviceName, err := parser.ParseYaml(path) // Correctly handle returned values
 			if err != nil {
 				fmt.Printf("Error parsing YAML file %s: %v\n", path, err)
 				return nil // Continue processing other files even if this one fails
@@ -77,23 +79,23 @@ func main() {
 	for application, value := range parsedYamls {
 		log.Printf("Service: %s, Version: %s", application, value.Metadata.Labels.Version)
 		version := value.Metadata.Labels.Version
-		application_to_manifest[application] = TCPManifest{Version: version, Service: application}
+		application_to_manifest[application] = t.TCPManifest{Version: version, Service: application}
 	}
 
 	// Output the TCPManifest for each service in JSON format
 	for _, manifest := range application_to_manifest {
-		PrintJson(manifest)
+		parser.PrintJson(manifest)
 	}
-	var register_wrapper_map = make(map[string]RegisterInfo)
-	var select_wrapper_map = make(map[string]SelectInfo)
+	var register_wrapper_map = make(map[string]t.RegisterInfo)
+	var select_wrapper_map = make(map[string]t.SelectInfo)
 
 	// Only looks at the directories corresponding to each service.
 	// Loop for registration  calls
 	for application, dir := range application_folders {
 		// Find all the go files
-		goFiles := FindGoFiles(dir)
+		goFiles := util.FindGoFiles(dir)
 		// Find all the go files with sdk function calls
-		nacos_files = FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files = util.FindGoFilesWithFunctions(dir, nacos_functions)
 
 		// Print the occurrences
 		// for funcName, nacos_files := range nacos_files {
@@ -103,13 +105,13 @@ func main() {
 		for _, files := range nacos_files {
 
 			for _, file := range files {
-				f := parseFile(file)
+				f := parser.ParseFile(file)
 
 				if err != nil {
 					log.Fatal(err)
 				}
 
-				instances := RegisterWrappers(f)
+				instances := parser.RegisterWrappers(f)
 				log.Printf("%v", instances)
 				for _, instance := range instances {
 					register_wrapper_map[application] = instance
@@ -117,13 +119,13 @@ func main() {
 			}
 
 			for _, file := range goFiles {
-				f := parseFile(file)
+				f := parser.ParseFile(file)
 				if err != nil {
 					log.Fatal(err)
 				}
 				for key, value := range register_wrapper_map {
 					if key == application {
-						names, infos := RegisterCalls(f, value, application)
+						names, infos := parser.RegisterCalls(f, value, application)
 						for i, name := range names {
 							service_directory[name] = infos[i]
 						}
@@ -139,9 +141,9 @@ func main() {
 
 	// Loop for service discovery calls
 	for application, dir := range application_folders {
-		goFiles := FindGoFiles(dir)
+		goFiles := util.FindGoFiles(dir)
 		// Find all the go files with sdk function calls
-		nacos_files = FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files = util.FindGoFilesWithFunctions(dir, nacos_functions)
 
 		// Print the occurrences
 		// for funcName, nacos_files := range nacos_files {
@@ -151,12 +153,12 @@ func main() {
 		for _, files := range nacos_files {
 
 			for _, file := range files {
-				f := parseFile(file)
+				f := parser.ParseFile(file)
 
 				if err != nil {
 					log.Fatal(err)
 				}
-				instances := DiscoveryWrappers(f)
+				instances := parser.DiscoveryWrappers(f)
 				for _, instance := range instances {
 					select_wrapper_map[application] = instance
 
@@ -166,15 +168,15 @@ func main() {
 
 		for _, file := range goFiles {
 
-			f := parseFile(file)
+			f := parser.ParseFile(file)
 			if err != nil {
 				log.Fatal(err)
 			}
 			for key, value := range select_wrapper_map {
 				if key == application {
-					names := DiscoveryCalls(f, value, application)
+					names := parser.DiscoveryCalls(f, value, application)
 					for _, name := range names {
-						req := TCPRequest{Type: "tcp", URL: service_directory[name].IP, Name: service_directory[name].application, Port: service_directory[name].Port}
+						req := t.TCPRequest{Type: "tcp", URL: service_directory[name].IP, Name: service_directory[name].Application, Port: service_directory[name].Port}
 						call_map[application] = append(call_map[application], req)
 					}
 
@@ -200,7 +202,7 @@ func main() {
 
 }
 
-func TCPOutput(mani TCPManifest) {
+func TCPOutput(mani t.TCPManifest) {
 	b, err := json.MarshalIndent(mani, "", " ")
 	if err != nil {
 		fmt.Println("error:", err)

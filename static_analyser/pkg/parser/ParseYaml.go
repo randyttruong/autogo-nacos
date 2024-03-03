@@ -1,14 +1,15 @@
-package main
+package parser
 
 import (
 	"fmt"
 	"io/ioutil"
 	"log"
 	"gopkg.in/yaml.v2"
+	t "static_analyser/pkg/types"
 )
 
-func ParseYaml(filePath string) (*Yaml2Go, string, error) {
-	conf := new(Yaml2Go)
+func ParseYaml(filePath string) (*t.Yaml2Go, string, error) {
+	conf := new(t.Yaml2Go)
 	yamlFile, err := ioutil.ReadFile(filePath)
 
 	if err != nil {
