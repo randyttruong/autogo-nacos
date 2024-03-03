@@ -59,3 +59,26 @@ func FindGoFilesWithFunctions(root string, fn_list []string) map[string][]string
 
 	return occurrences
 }
+
+
+func FindGoFiles(root string) ([]string) {
+    var files []string
+
+    err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
+        // Only consider .go files that are not directories
+        if !info.IsDir() && strings.HasSuffix(path, ".go") {
+            files = append(files, path)
+        }
+        return nil
+    })
+
+    if err != nil {
+        fmt.Printf("Error walking the file tree: %v\n", err)
+		return nil
+    }
+
+    return files
+}

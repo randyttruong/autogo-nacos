@@ -72,7 +72,7 @@ func main() {
 	}
 
 	// Call the Hello Service
-	// 
+	//
 	response, err := http.Get(fmt.Sprintf("%s/hello?username=%s", helloServiceURL, username))
 	if err != nil {
 		log.Println("Failed to call Hello Service: %v", err)

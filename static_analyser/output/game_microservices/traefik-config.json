@@ -1,0 +1,12 @@
+{
+ "service": "traefik-config",
+ "version": "",
+ "requests": [
+  {
+   "type": "tcp",
+   "url": "",
+   "name": "micro-go-login",
+   "port": "8083"
+  }
+ ]
+}

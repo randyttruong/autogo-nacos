@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"log"
-	// "fmt"
+	"strings"
 )
 
 func parseFile(filePath string) *ast.File {
@@ -22,152 +23,312 @@ type customVisitor struct {
 	wrapperFuncs []string
 }
 
+// End implements ast.Node.
+func (*customVisitor) End() token.Pos {
+	panic("unimplemented")
+}
+
+// Pos implements ast.Node.
+func (*customVisitor) Pos() token.Pos {
+	panic("unimplemented")
+}
+
 func NewCustomVisitor(functionName string, wrapperFuncs []string) *customVisitor {
 	return &customVisitor{functionName: functionName, wrapperFuncs: wrapperFuncs}
 }
 
-var wrapper = ""
+// finds the wrappers for register instance
+func RegisterWrappers(node ast.Node) []RegisterInfo {
+	var instances []RegisterInfo
+	var paramNames = []string{}
+	var wrapper string
+	ast.Inspect(node, func(n ast.Node) bool {
+		if n == nil {
+			return false
+		}
 
-func (v *customVisitor) Visit(node ast.Node) ast.Visitor {
-	if node == nil {
-		return nil
-	}
+		switch n := n.(type) {
+		case *ast.FuncDecl:
+			// Function declaration
+			wrapper = n.Name.Name
+			paramNames = []string{}
 
-	switch n := node.(type) {
-	case *ast.FuncDecl:
-		// Function declaration
-		wrapper = n.Name.Name
-		log.Printf("Function declaration: %s\n", n.Name.Name)
-
-		// case *ast.AssignStmt:
-		// 		// Variable assignment
-		// 		for i, lhs := range n.Lhs {
-	//     if len(n.Rhs) > i {
-	//         switch rhs := n.Rhs[i].(type) {
-	//         case *ast.BasicLit:
-	//             // LHS is usually an Ident or a more complex expression.
-	//             if ident, ok := lhs.(*ast.Ident); ok {
-	//                 fmt.Printf("Assignment - Name: %s, Value: %s\n", ident.Name, rhs.Value)
-	//             }
-	//         }
-	//     }
-	// 		}
-	// case *ast.ValueSpec:
-	// 		// Variable/constant declaration
-	// 		for i, name := range n.Names {
-	//     // Assuming values are BasicLits for simplicity. Adjust as needed.
-	//     if len(n.Values) > i {
-	//         switch val := n.Values[i].(type) {
-	//         case *ast.BasicLit:
-	//             fmt.Printf("Var Declaration - Name: %s, Value: %s\n", name.Name, val.Value)
-	//         }
-	//     }
-	// 		}
-	case *ast.CallExpr:
-		// Check if this callExpr matches the function of interest
-		// For simplicity, let's assume we're looking for a function named "TargetFunction"
-		if selExpr, ok := n.Fun.(*ast.SelectorExpr); ok {
-			log.Printf("%s ", selExpr.Sel.Name)
-			if selExpr.Sel.Name == v.functionName {
-				log.Printf("%s called\n", v.functionName)
-				log.Printf("%s is the wrapper\n", wrapper)
-				// 				}
+			for _, param := range n.Type.Params.List {
+				for _, name := range param.Names {
+					paramNames = append(paramNames, name.Name)
+				}
 			}
 
-			// Check the package and function name
-			if selExpr.Sel.Name == "RegisterInstance" {
-				// Found a call to TargetFunction
-				// Analyze arguments here
-				for _, arg := range n.Args {
-					switch arg := arg.(type) {
-					case *ast.BasicLit:
-						log.Printf(arg.Value) // This is a literal value; you can access it via arg.Value
-					case *ast.Ident:
-						log.Printf(arg.Name)
-                    case *ast.SelectorExpr:
-                        log.Printf(arg.Sel.Name)
-                    case *ast.CompositeLit:
-                        if sel, ok := arg.Type.(*ast.SelectorExpr); ok {
-                            log.Printf(sel.Sel.Name)
-                            if sel.Sel.Name == "RegisterInstanceParam" {
-                                for _, elt := range arg.Elts {
-                                    if kv, ok := elt.(*ast.KeyValueExpr); ok {
-                                        if key, ok := kv.Key.(*ast.Ident); ok {
-                                            switch key.Name {
-                                            case "Ip", "Port", "ServiceName":
-                                                switch v := kv.Value.(type) {
-                                                case *ast.Ident:
-                                                    log.Printf("%s is a variable with value: %s", key.Name, v.Name)
-                                                case *ast.BasicLit:
-                                                    log.Printf("%s is a literal with value: %s", key.Name, v.Value)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                                
+		case *ast.CallExpr:
+			if selExpr, ok := n.Fun.(*ast.SelectorExpr); ok {
+				if selExpr.Sel.Name == "RegisterInstance" {
+					for _, arg := range n.Args {
+						switch arg := arg.(type) {
+						case *ast.CompositeLit:
+							if sel, ok := arg.Type.(*ast.SelectorExpr); ok {
+								if sel.Sel.Name == "RegisterInstanceParam" {
+									instance := RegisterInfo{}
+									instance.Wrapper = wrapper
+									for _, elt := range arg.Elts {
+										if kv, ok := elt.(*ast.KeyValueExpr); ok {
+											if key, ok := kv.Key.(*ast.Ident); ok {
 
-                        }
-                    }
-				// }
+												switch key.Name {
+												case "Ip", "Port", "ServiceName":
+													switch v := kv.Value.(type) {
+													case *ast.Ident:
+														switch key.Name {
+														case "Ip":
+															for i, paramName := range paramNames {
+																if paramName == strings.TrimSpace(v.Name) {
+																	instance.IP = WrapperParams{i}
+																}
+															}
+
+														case "Port":
+															for i, paramName := range paramNames {
+
+																if paramName == strings.TrimSpace(v.Name) {
+																	instance.Port = WrapperParams{i}
+																}
+															}
+
+														case "ServiceName":
+															for i, paramName := range paramNames {
+																if paramName == strings.TrimSpace(v.Name) {
+																	instance.ServiceName = WrapperParams{i}
+																}
+															}
+															// if instance.ServiceName == nil {
+															// 	instance.ServiceName = v.Name
+															// }
+														}
+
+													case *ast.BasicLit:
+														switch key.Name {
+														case "Ip":
+															instance.IP = strings.TrimSpace(v.Value)
+														case "Port":
+															instance.Port = strings.TrimSpace(v.Value)
+														case "ServiceName":
+															instance.ServiceName = strings.TrimSpace(v.Value)
+														}
+
+													}
+
+												}
+
+											}
+										}
+									}
+									instances = append(instances, instance)
+
+								}
+							}
+						}
+					}
+				}
 			}
 		}
-	}}
-	return v
+		return true
+	})
+	return instances
 }
 
-// case *ast.CallExpr:
-// 		// Function call
-// 		if fun, ok := n.Fun.(*ast.SelectorExpr); ok {
-// 				// Compare the function call to the specified function name
-// 				if fun.Sel.Name == v.functionName {
-// 						log.Printf("%s called\n", v.functionName)
-// 				}
-// 		}
-// }
+// finds the invocation of the wrappers for register instance and resolves the arguments for serviceName, Ip, and Port
+func RegisterCalls(node ast.Node, wrapper RegisterInfo, service string) ([]string, []ServiceInfo) {
+	wrapperName := wrapper.Wrapper
+	serviceNames := []string{}
+	serviceInfos := []ServiceInfo{}
+	ast.Inspect(node, func(n ast.Node) bool {
+		if n == nil {
+			return false
+		}
 
-// if node == nil {
-// 	return nil
-// }
-//   // Remove the unused variable declaration
-//   var wrapper = ""
+		switch n := n.(type) {
 
-//   switch n := node.(type) {
-//   // case *ast.ValueSpec:
-// // 	for _, name := range n.Names {
-// // 		v.varDeclarations[name.Name] = n
-// // // 	}
-// case *ast.FuncDecl:
-//       wrapper = n.Name.Name
-// 	if n.Type.Params != nil {
-// 		for _, field := range n.Type.Params.List {
-// 			for _, name := range field.Names {
-// 				v.paramDeclarations[name.Name] = field
-// 			}
-// 		}
-// 	}
-// case *ast.CallExpr:
-// 	// Check if this callExpr matches the function of interest
-// 	// For simplicity, let's assume we're looking for a function named "TargetFunction"
-// 	if selExpr, ok := n.Fun.(*ast.SelectorExpr); ok {
-// 		if _, ok := selExpr.X.(*ast.Ident); ok {
-// 			// Check the package and function name
-// 			if selExpr.Sel.Name == "RegisterInstance" {
-// 				// Found a call to TargetFunction
-// 				// Analyze arguments here
-//                   for _, arg := range n.Args {
-//                       switch arg := arg.(type) {
-//                       case *ast.BasicLit:
-//                           print(arg.Value)// This is a literal value; you can access it via arg.Value
-//                       case *ast.Ident:
-//                           // This is an identifier; you need to trace it
-//                           // Placeholder for tracing logic
-//                       }
-//                   }
-// 			}
-// 		}
-// 	}
-// }
-// return v
-// };
+		case *ast.CallExpr:
+			// log.Printf("Call expression: %s\n", n.Fun)
+			if fun, ok := n.Fun.(*ast.Ident); ok {
+				var args []string
+				if fun.Name == wrapperName {
+
+					for _, arg := range n.Args {
+
+						if lit, ok := arg.(*ast.BasicLit); ok {
+							args = append(args, lit.Value)
+						} else {
+							args = append(args, "nil")
+						}
+					}
+					fmt.Printf("%v", args)
+
+					serviceName := ""
+					ip := ""
+					port := ""
+
+					switch t := wrapper.ServiceName.(type) {
+					case string:
+						serviceName = t
+					case WrapperParams:
+						serviceName = strings.ReplaceAll(args[t.position], "\"", "")
+					}
+					switch t := wrapper.IP.(type) {
+					case string:
+						ip = t
+					case WrapperParams:
+						ip = strings.ReplaceAll(args[t.position], "\"", "")
+					}
+					switch t := wrapper.Port.(type) {
+					case string:
+						port = t
+					case WrapperParams:
+						port = strings.ReplaceAll(args[t.position], "\"", "")
+					}
+					serviceInfos = append(serviceInfos, ServiceInfo{service, ip, port})
+					serviceNames = append(serviceNames, serviceName)
+				}
+
+			}
+			// var instances []RegisterInfo
+
+		}
+		// return true
+		return true
+	})
+
+	return serviceNames, serviceInfos
+}
+
+// finds the wrappers for service discovery
+func DiscoveryWrappers(node ast.Node) []SelectInfo {
+	// Different nacos SDK functions for service discovery
+	select_sdk := []string{"GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
+	select_params := []string{"GetServiceParam", "SelectAllInstancesParam", "SelectOneHealthyInstanceParam", "SelectInstancesParam", "SubscribeParam"}
+
+	var paramNames = []string{}
+	var wrapper string
+	var instances []SelectInfo
+	ast.Inspect(node, func(n ast.Node) bool {
+		if n == nil {
+			return false
+		}
+
+		switch n := n.(type) {
+		case *ast.FuncDecl:
+			// Function declaration
+			wrapper = n.Name.Name
+			log.Printf("Function declaration: %s\n", n.Name.Name)
+
+			for _, param := range n.Type.Params.List {
+				for _, name := range param.Names {
+					paramNames = append(paramNames, name.Name)
+				}
+			}
+			// log.Printf("Parameter names: %v\n", paramNames)
+
+		case *ast.CallExpr:
+			// log.Printf("Call expression: %s\n", n.Fun)
+			if selExpr, ok := n.Fun.(*ast.SelectorExpr); ok {
+				// If the function is a list of nacos sdk functions
+				if contains(select_sdk, selExpr.Sel.Name) {
+					// log.Printf("%s ", selExpr.Sel.Name)
+					for _, arg := range n.Args {
+
+						switch arg := arg.(type) {
+						case *ast.CompositeLit:
+							if sel, ok := arg.Type.(*ast.SelectorExpr); ok {
+
+								if contains(select_params, sel.Sel.Name) {
+
+									instance := SelectInfo{}
+									instance.Wrapper = wrapper
+									for _, elt := range arg.Elts {
+										if kv, ok := elt.(*ast.KeyValueExpr); ok {
+											if key, ok := kv.Key.(*ast.Ident); ok {
+												if key.Name == "ServiceName" {
+													switch v := kv.Value.(type) {
+													case *ast.Ident:
+														for i, paramName := range paramNames {
+															if paramName == strings.TrimSpace(v.Name) {
+																instance.ServiceName = WrapperParams{i}
+															}
+														}
+													case *ast.BasicLit:
+														instance.ServiceName = strings.ReplaceAll(strings.TrimSpace(v.Value), "\"", "")
+													}
+												}
+											}
+										}
+									}
+
+									instances = append(instances, instance)
+
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return true
+	})
+	return instances
+}
+
+func DiscoveryCalls(node ast.Node, wrapper SelectInfo, service string) []string {
+	wrapperName := wrapper.Wrapper
+	serviceNames := []string{}
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		if n == nil {
+			return false
+		}
+
+		switch n := n.(type) {
+		case *ast.CallExpr:
+			if fun, ok := n.Fun.(*ast.Ident); ok {
+				var args []string
+				if fun.Name == wrapperName {
+
+					for _, arg := range n.Args {
+
+						if lit, ok := arg.(*ast.BasicLit); ok {
+							args = append(args, lit.Value)
+						} else {
+							args = append(args, "nil")
+						}
+					}
+					fmt.Printf("%v", args)
+
+					serviceName := ""
+
+					switch t := wrapper.ServiceName.(type) {
+					case string:
+						serviceName = t
+					case WrapperParams:
+						serviceName = strings.ReplaceAll(args[t.position], "\"", "")
+					}
+
+					serviceNames = append(serviceNames, serviceName)
+				}
+
+			}
+
+		}
+
+		return true
+	})
+
+	return serviceNames
+}
+
+// helper for checking if a string is in a slice
+func contains(slice []string, item string) bool {
+	for _, a := range slice {
+		if a == item {
+			return true
+		}
+	}
+	return false
+}

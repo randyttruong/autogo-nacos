@@ -130,3 +130,30 @@ type tcpEndpoint struct {
 	//path    string
 	port string
 }
+
+// Stores information about wrappers for registering
+type RegisterInfo struct {
+	Wrapper string
+	// Interface is string if varaible is hard cades and it is WrapperParams if variable is a argument to the wrapper
+	ServiceName interface{}
+	IP          interface{}
+	Port        interface{}
+}
+
+type WrapperParams struct {
+	// position the argument is passed into the wrapper
+	position int
+}
+
+// Stores information about wrappers for selecting
+type SelectInfo struct {
+	Wrapper     string
+	ServiceName interface{}
+}
+
+// stores information about the service
+type ServiceInfo struct {
+	application string
+	IP          string
+	Port        string
+}
