@@ -38,7 +38,7 @@ func FindGoFilesWithFunctions(root string, fn_list []string) (map[string][]strin
 
 		// Check for each function in the list if it exists in the file
 		for _, funcName := range fn_list {
-			if !strings.Contains(contentStr, funcName+"(") { // Simple check for function call
+			if strings.Contains(contentStr, funcName+"(") {
 				occurrences[funcName] = append(occurrences[funcName], file)
 			}
 		}
