@@ -19,24 +19,6 @@ func ParseFile(filePath string) *ast.File {
 	return fileAst
 }
 
-type customVisitor struct {
-	functionName string
-	wrapperFuncs []string
-}
-
-// End implements ast.Node.
-func (*customVisitor) End() token.Pos {
-	panic("unimplemented")
-}
-
-// Pos implements ast.Node.
-func (*customVisitor) Pos() token.Pos {
-	panic("unimplemented")
-}
-
-func NewCustomVisitor(functionName string, wrapperFuncs []string) *customVisitor {
-	return &customVisitor{functionName: functionName, wrapperFuncs: wrapperFuncs}
-}
 
 // finds the wrappers for register instance
 func RegisterWrappers(node ast.Node) []t.RegisterInfo {
@@ -82,7 +64,7 @@ func RegisterWrappers(node ast.Node) []t.RegisterInfo {
 														case "Ip":
 															for i, paramName := range paramNames {
 																if paramName == strings.TrimSpace(v.Name) {
-																	instance.IP = t.WrapperParams{i}
+																	instance.IP = t.WrapperParams{Position:i}
 																}
 															}
 
@@ -94,7 +76,7 @@ func RegisterWrappers(node ast.Node) []t.RegisterInfo {
 															for i, paramName := range paramNames {
 
 																if paramName == strings.TrimSpace(v.Name) {
-																	instance.Port = t.WrapperParams{i}
+																	instance.Port = t.WrapperParams{Position:i}
 																}
 																if instance.Port == nil {
 																	instance.Port = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
@@ -104,7 +86,7 @@ func RegisterWrappers(node ast.Node) []t.RegisterInfo {
 														case "ServiceName":
 															for i, paramName := range paramNames {
 																if paramName == strings.TrimSpace(v.Name) {
-																	instance.ServiceName = t.WrapperParams{i}
+																	instance.ServiceName = t.WrapperParams{Position:i}
 																}
 																if instance.ServiceName == nil {
 																	instance.ServiceName = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
@@ -196,7 +178,7 @@ func RegisterCalls(node ast.Node, wrapper t.RegisterInfo, service string) ([]str
 					case t.WrapperParams:
 						port = strings.ReplaceAll(args[t.Position], "\"", "")
 					}
-					serviceInfos = append(serviceInfos, t.ServiceInfo{service, ip, port})
+					serviceInfos = append(serviceInfos, t.ServiceInfo{Application: service, IP:ip, Port:port})
 					serviceNames = append(serviceNames, serviceName)
 				}
 
@@ -260,7 +242,7 @@ func DiscoveryWrappers(node ast.Node) []t.SelectInfo {
 													case *ast.Ident:
 														for i, paramName := range paramNames {
 															if paramName == strings.TrimSpace(v.Name) {
-																instance.ServiceName = t.WrapperParams{i}
+																instance.ServiceName = t.WrapperParams{Position: i}
 															}
 															if instance.ServiceName == nil {
 																instance.ServiceName = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
@@ -360,20 +342,20 @@ func FindConstValue(root ast.Node, constName string, wrapper string) string {
 						if len(node.Rhs) > 0 {
 							if rhs, ok := node.Rhs[0].(*ast.BasicLit); ok {
 								constValue = rhs.Value
-								return false 
+								return false
 							}
 							if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
 								if len(callExpr.Args) > 0 {
 									if basicLit, ok := callExpr.Args[0].(*ast.BasicLit); ok {
 										constValue = basicLit.Value
-										return false 
+										return false
 									}
 								}
 							}
 						}
 					}
 				}
-			
+
 		}
 		return true // continue the inspection otherwise
 	})
