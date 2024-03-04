@@ -196,27 +196,32 @@ func main() {
 		temp.Requests = call_map[application]
 		application_to_manifest[application] = temp
 
-		TCPOutput(application_to_manifest[application])
+		WriteTCPManifestToJSON(application_to_manifest[application], application)
 
 	}
 
 }
 
-func TCPOutput(mani t.TCPManifest) {
-	b, err := json.MarshalIndent(mani, "", " ")
+// WriteTCPManifestToJSON writes the TCPManifest to a JSON file
+func WriteTCPManifestToJSON(
+	manifest t.TCPManifest, // The TCPManifest to write to a file
+	serviceName string, // The name of the service
+) error { // Returns an error if marshalling or writing the file fails
+
+	// Convert the manifest to JSON
+	jsonData, err := json.MarshalIndent(manifest, "", " ")
+
 	if err != nil {
-		fmt.Println("error:", err)
-	}
-	//生成json文件
-	err = ioutil.WriteFile(outputPrefix+mani.Service+".json", b, 0777)
-	if err != nil {
-		fmt.Println("error:", err)
-		return
-	}
-	var data interface{}
-	err = json.Unmarshal(b, &data)
-	if err != nil {
-		fmt.Println("error:", err)
+		return fmt.Errorf("failed to marshal TCPManifest for service '%s': %w", serviceName, err)
 	}
 
+	// Write the JSON to a file
+	filename := outputPrefix + manifest.Service + ".json"
+	err = os.WriteFile(filename, jsonData, 0777) // consider using 0644 in future for more secure permissions
+
+	if err != nil {
+		return fmt.Errorf("failed to write TCPManifest to file '%s': %w", filename, err)
+	}
+
+	return nil
 }
