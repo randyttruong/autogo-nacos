@@ -81,10 +81,6 @@ func main() {
 		application_to_manifest[application] = t.TCPManifest{Version: version, Service: application}
 	}
 
-	// Output the TCPManifest for each service in JSON format
-	for _, manifest := range application_to_manifest {
-		parser.PrintJson(manifest)
-	}
 	var register_wrapper_map = make(map[string]t.RegisterInfo)
 	var select_wrapper_map = make(map[string]t.SelectInfo)
 
@@ -117,7 +113,6 @@ func main() {
 				f := parser.ParseFile(file)
 
 				instances := parser.RegisterWrappers(f)
-				log.Printf("%v", instances)
 				for _, instance := range instances {
 					register_wrapper_map[application] = instance
 				}
@@ -191,7 +186,6 @@ func main() {
 			}
 		}
 
-		log.Printf("%v", call_map)
 	}
 
 	// Outputs the TCPManifest file for each service in JSON format
