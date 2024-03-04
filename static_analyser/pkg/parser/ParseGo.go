@@ -229,8 +229,6 @@ func DiscoveryWrappers(node ast.Node) []t.SelectInfo {
 		case *ast.FuncDecl:
 			// Function declaration
 			wrapper = n.Name.Name
-			log.Printf("Function declaration: %s\n", n.Name.Name)
-
 			for _, param := range n.Type.Params.List {
 				for _, name := range param.Names {
 					paramNames = append(paramNames, name.Name)
@@ -379,8 +377,5 @@ func FindConstValue(root ast.Node, constName string, wrapper string) string {
 		}
 		return true // continue the inspection otherwise
 	})
-
-	log.Printf("Const value: %s\n", constValue)
-
 	return constValue
 }

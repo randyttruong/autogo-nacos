@@ -135,7 +135,7 @@ func main() {
 				}
 			}
 
-			log.Printf("\nService Map: %v", service_directory)
+			// log.Printf("\nService Map: %v", service_directory)
 
 		}
 
