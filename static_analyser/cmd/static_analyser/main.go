@@ -115,7 +115,12 @@ func main() {
 		for _, files := range nacos_files {
 
 			for _, file := range files {
-				f := parser.ParseFile(file)
+				f, err := parser.ParseFile(file)
+
+				if err != nil {
+					fmt.Printf("error parsing file %s: %v\n", file, err)
+					return
+				}
 
 				instances := parser.RegisterWrappers(f)
 				for _, instance := range instances {
@@ -124,7 +129,12 @@ func main() {
 			}
 
 			for _, file := range goFiles {
-				f := parser.ParseFile(file)
+				f, err := parser.ParseFile(file)
+
+				if err != nil {
+					fmt.Printf("error parsing file %s: %v\n", file, err)
+					return
+				}
 				for key, value := range register_wrapper_map {
 					if key == application {
 						names, infos := parser.RegisterCalls(f, value, application)
@@ -165,7 +175,12 @@ func main() {
 		for _, files := range nacos_files {
 
 			for _, file := range files {
-				f := parser.ParseFile(file)
+				f, err := parser.ParseFile(file)
+
+				if err != nil {
+					fmt.Printf("error parsing file %s: %v\n", file, err)
+					return
+				}
 
 				instances := parser.DiscoveryWrappers(f)
 				for _, instance := range instances {
@@ -177,7 +192,13 @@ func main() {
 
 		for _, file := range goFiles {
 
-			f := parser.ParseFile(file)
+			f, err := parser.ParseFile(file)
+
+			if err != nil {
+				fmt.Printf("error parsing file %s: %v\n", file, err)
+				return
+			}
+
 			for key, value := range select_wrapper_map {
 				if key == application {
 					names := parser.DiscoveryCalls(f, value, application)
