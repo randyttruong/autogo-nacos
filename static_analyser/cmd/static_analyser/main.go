@@ -1,12 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	// "io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	f_util "static_analyser/pkg/fileUtils"
 	"static_analyser/pkg/parser"
 	t "static_analyser/pkg/types"
 	"static_analyser/pkg/util"
@@ -93,9 +92,19 @@ func main() {
 	// Loop for registration  calls
 	for application, dir := range application_folders {
 		// Find all the go files
-		goFiles := util.FindGoFiles(dir)
+		goFiles, err := util.FindGoFiles(dir)
+
+		if err != nil {
+			fmt.Printf("error finding go files in %s: %v\n", dir, err)
+			return
+		}
 		// Find all the go files with sdk function calls
-		nacos_files = util.FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files, err = util.FindGoFilesWithFunctions(dir, nacos_functions)
+
+		if err != nil {
+			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
+			return
+		}
 
 		// Print the occurrences
 		// for funcName, nacos_files := range nacos_files {
@@ -107,10 +116,6 @@ func main() {
 			for _, file := range files {
 				f := parser.ParseFile(file)
 
-				if err != nil {
-					log.Fatal(err)
-				}
-
 				instances := parser.RegisterWrappers(f)
 				log.Printf("%v", instances)
 				for _, instance := range instances {
@@ -120,9 +125,6 @@ func main() {
 
 			for _, file := range goFiles {
 				f := parser.ParseFile(file)
-				if err != nil {
-					log.Fatal(err)
-				}
 				for key, value := range register_wrapper_map {
 					if key == application {
 						names, infos := parser.RegisterCalls(f, value, application)
@@ -141,9 +143,19 @@ func main() {
 
 	// Loop for service discovery calls
 	for application, dir := range application_folders {
-		goFiles := util.FindGoFiles(dir)
+		goFiles, err := util.FindGoFiles(dir)
+
+		if err != nil {
+			fmt.Printf("error finding go files in %s: %v\n", dir, err)
+			return
+		}
 		// Find all the go files with sdk function calls
-		nacos_files = util.FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files, err = util.FindGoFilesWithFunctions(dir, nacos_functions)
+
+		if err != nil {
+			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
+			return
+		}
 
 		// Print the occurrences
 		// for funcName, nacos_files := range nacos_files {
@@ -155,9 +167,6 @@ func main() {
 			for _, file := range files {
 				f := parser.ParseFile(file)
 
-				if err != nil {
-					log.Fatal(err)
-				}
 				instances := parser.DiscoveryWrappers(f)
 				for _, instance := range instances {
 					select_wrapper_map[application] = instance
@@ -169,9 +178,6 @@ func main() {
 		for _, file := range goFiles {
 
 			f := parser.ParseFile(file)
-			if err != nil {
-				log.Fatal(err)
-			}
 			for key, value := range select_wrapper_map {
 				if key == application {
 					names := parser.DiscoveryCalls(f, value, application)
@@ -196,32 +202,8 @@ func main() {
 		log.Printf("Manifest%v", temp)
 		application_to_manifest[application] = temp
 
-		WriteTCPManifestToJSON(application_to_manifest[application], application)
+		f_util.WriteTCPManifestToJSON(application_to_manifest[application], application, outputPrefix)
 
 	}
 
-}
-
-// WriteTCPManifestToJSON writes the TCPManifest to a JSON file
-func WriteTCPManifestToJSON(
-	manifest t.TCPManifest, // The TCPManifest to write to a file
-	serviceName string, // The name of the service
-) error { // Returns an error if marshalling or writing the file fails
-
-	// Convert the manifest to JSON
-	jsonData, err := json.MarshalIndent(manifest, "", " ")
-
-	if err != nil {
-		return fmt.Errorf("failed to marshal TCPManifest for service '%s': %w", serviceName, err)
-	}
-
-	// Write the JSON to a file
-	filename := outputPrefix + manifest.Service + ".json"
-	err = os.WriteFile(filename, jsonData, 0777) // consider using 0644 in future for more secure permissions
-
-	if err != nil {
-		return fmt.Errorf("failed to write TCPManifest to file '%s': %w", filename, err)
-	}
-
-	return nil
 }
