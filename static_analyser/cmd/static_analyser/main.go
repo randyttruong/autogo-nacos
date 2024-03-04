@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-	t "static_analyser/pkg/types"
-	"static_analyser/pkg/parser"
-	"static_analyser/pkg/util"
 	f_util "static_analyser/pkg/fileUtils"
+	"static_analyser/pkg/parser"
+	t "static_analyser/pkg/types"
+	"static_analyser/pkg/util"
+	"strings"
 )
 
 // set the output directory for manifests
@@ -92,9 +92,19 @@ func main() {
 	// Loop for registration  calls
 	for application, dir := range application_folders {
 		// Find all the go files
-		goFiles := util.FindGoFiles(dir)
+		goFiles, err := util.FindGoFiles(dir)
+
+		if err != nil {
+			fmt.Printf("error finding go files in %s: %v\n", dir, err)
+			return
+		}
 		// Find all the go files with sdk function calls
-		nacos_files = util.FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files, err = util.FindGoFilesWithFunctions(dir, nacos_functions)
+
+		if err != nil {
+			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
+			return
+		}
 
 		// Print the occurrences
 		// for funcName, nacos_files := range nacos_files {
@@ -133,9 +143,19 @@ func main() {
 
 	// Loop for service discovery calls
 	for application, dir := range application_folders {
-		goFiles := util.FindGoFiles(dir)
+		goFiles, err := util.FindGoFiles(dir)
+
+		if err != nil {
+			fmt.Printf("error finding go files in %s: %v\n", dir, err)
+			return
+		}
 		// Find all the go files with sdk function calls
-		nacos_files = util.FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files, err = util.FindGoFilesWithFunctions(dir, nacos_functions)
+
+		if err != nil {
+			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
+			return
+		}
 
 		// Print the occurrences
 		// for funcName, nacos_files := range nacos_files {
