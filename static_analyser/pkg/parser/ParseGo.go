@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	t "static_analyser/pkg/types"
+	"static_analyser/pkg/util"
 	"strings"
 )
 
@@ -56,7 +57,7 @@ func FindRegisterInstanceWrappers(node ast.Node) []t.RegisterInstanceWrapper {
 															}
 
 															if instance.IP == nil {
-																instance.IP = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+																instance.IP = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
 															}
 
 														case "Port":
@@ -66,7 +67,7 @@ func FindRegisterInstanceWrappers(node ast.Node) []t.RegisterInstanceWrapper {
 																	instance.Port = t.WrapperParams{Position: i}
 																}
 																if instance.Port == nil {
-																	instance.Port = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+																	instance.Port = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
 																}
 															}
 
@@ -76,7 +77,7 @@ func FindRegisterInstanceWrappers(node ast.Node) []t.RegisterInstanceWrapper {
 																	instance.ServiceName = t.WrapperParams{Position: i}
 																}
 																if instance.ServiceName == nil {
-																	instance.ServiceName = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+																	instance.ServiceName = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
 																}
 															}
 														}
@@ -206,7 +207,7 @@ func FindSelectInstanceWrappers(node ast.Node) []t.SelectInstanceWrapper {
 			// log.Printf("Call expression: %s\n", n.Fun)
 			if selExpr, ok := n.Fun.(*ast.SelectorExpr); ok {
 				// If the function is a list of nacos sdk functions
-				if contains(select_sdk, selExpr.Sel.Name) {
+				if util.Contains(select_sdk, selExpr.Sel.Name) {
 					// log.Printf("%s ", selExpr.Sel.Name)
 					for _, arg := range n.Args {
 
@@ -214,7 +215,7 @@ func FindSelectInstanceWrappers(node ast.Node) []t.SelectInstanceWrapper {
 						case *ast.CompositeLit:
 							if sel, ok := arg.Type.(*ast.SelectorExpr); ok {
 
-								if contains(select_params, sel.Sel.Name) {
+								if util.Contains(select_params, sel.Sel.Name) {
 
 									instance := t.SelectInstanceWrapper{}
 									instance.Wrapper = wrapper
@@ -229,7 +230,7 @@ func FindSelectInstanceWrappers(node ast.Node) []t.SelectInstanceWrapper {
 																instance.ServiceName = t.WrapperParams{Position: i}
 															}
 															if instance.ServiceName == nil {
-																instance.ServiceName = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+																instance.ServiceName = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
 															}
 														}
 													case *ast.BasicLit:
@@ -299,49 +300,4 @@ func FindSelectInstanceWrappersInvocations(node ast.Node, wrapper t.SelectInstan
 	})
 
 	return serviceNames
-}
-
-// helper for checking if a string is in a slice
-func contains(slice []string, item string) bool {
-	for _, a := range slice {
-		if a == item {
-			return true
-		}
-	}
-	return false
-}
-
-func FindConstValue(root ast.Node, constName string, wrapper string) string {
-	var constValue string
-	curr_wrapper := ""
-	ast.Inspect(root, func(n ast.Node) bool {
-
-		switch node := n.(type) {
-		case *ast.FuncDecl:
-			curr_wrapper = node.Name.Name
-
-		case *ast.AssignStmt:
-			for _, lhs := range node.Lhs {
-				if ident, ok := lhs.(*ast.Ident); ok && ident.Name == constName && curr_wrapper == wrapper {
-					if len(node.Rhs) > 0 {
-						if rhs, ok := node.Rhs[0].(*ast.BasicLit); ok {
-							constValue = rhs.Value
-							return false
-						}
-						if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
-							if len(callExpr.Args) > 0 {
-								if basicLit, ok := callExpr.Args[0].(*ast.BasicLit); ok {
-									constValue = basicLit.Value
-									return false
-								}
-							}
-						}
-					}
-				}
-			}
-
-		}
-		return true // continue the inspection otherwise
-	})
-	return constValue
 }
