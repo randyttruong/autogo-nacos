@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	// "io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-	t "static_analyser/pkg/types"
 	"static_analyser/pkg/parser"
+	t "static_analyser/pkg/types"
 	"static_analyser/pkg/util"
+	"strings"
 )
 
 // set the output directory for manifests
@@ -19,7 +19,7 @@ var outputPrefix = "output/game_microservices/"
 var nacos_functions = []string{"RegisterInstance", "GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
 
 // Set the root directory you want to search
-var root = "../game_microservices/"
+var root = "../example_2/"
 
 func main() {
 	var validYamlFiles []string
@@ -191,9 +191,9 @@ func main() {
 	// Outputs the TCPManifest file for each service in JSON format
 	log.Printf("%v", application_to_manifest)
 	for application := range application_folders {
-		log.Printf("Service: %s", application)
 		temp := application_to_manifest[application]
 		temp.Requests = call_map[application]
+		log.Printf("Manifest%v", temp)
 		application_to_manifest[application] = temp
 
 		WriteTCPManifestToJSON(application_to_manifest[application], application)

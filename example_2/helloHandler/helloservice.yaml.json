@@ -1,0 +1,5 @@
+{
+ "service": "../example/helloHandler/helloservice.yaml",
+ "version": "",
+ "requests": null
+}

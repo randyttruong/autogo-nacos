@@ -6,8 +6,8 @@ import (
 	"go/parser"
 	"go/token"
 	"log"
-	"strings"
 	t "static_analyser/pkg/types"
+	"strings"
 )
 
 func ParseFile(filePath string) *ast.File {
@@ -86,11 +86,18 @@ func RegisterWrappers(node ast.Node) []t.RegisterInfo {
 																}
 															}
 
+															if instance.IP == nil {
+																instance.IP = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+															}
+
 														case "Port":
 															for i, paramName := range paramNames {
 
 																if paramName == strings.TrimSpace(v.Name) {
 																	instance.Port = t.WrapperParams{i}
+																}
+																if instance.Port == nil {
+																	instance.Port = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
 																}
 															}
 
@@ -98,6 +105,9 @@ func RegisterWrappers(node ast.Node) []t.RegisterInfo {
 															for i, paramName := range paramNames {
 																if paramName == strings.TrimSpace(v.Name) {
 																	instance.ServiceName = t.WrapperParams{i}
+																}
+																if instance.ServiceName == nil {
+																	instance.ServiceName = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
 																}
 															}
 															// if instance.ServiceName == nil {
@@ -254,6 +264,9 @@ func DiscoveryWrappers(node ast.Node) []t.SelectInfo {
 															if paramName == strings.TrimSpace(v.Name) {
 																instance.ServiceName = t.WrapperParams{i}
 															}
+															if instance.ServiceName == nil {
+																instance.ServiceName = FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+															}
 														}
 													case *ast.BasicLit:
 														instance.ServiceName = strings.ReplaceAll(strings.TrimSpace(v.Value), "\"", "")
@@ -332,4 +345,42 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+func FindConstValue(root ast.Node, constName string, wrapper string) string {
+	var constValue string
+	curr_wrapper := ""
+	ast.Inspect(root, func(n ast.Node) bool {
+
+		switch node := n.(type) {
+		case *ast.FuncDecl:
+			curr_wrapper = node.Name.Name
+
+		case *ast.AssignStmt:
+			for _, lhs := range node.Lhs {
+				if ident, ok := lhs.(*ast.Ident); ok && ident.Name == constName && curr_wrapper == wrapper {
+						if len(node.Rhs) > 0 {
+							if rhs, ok := node.Rhs[0].(*ast.BasicLit); ok {
+								constValue = rhs.Value
+								return false 
+							}
+							if callExpr, ok := node.Rhs[0].(*ast.CallExpr); ok {
+								if len(callExpr.Args) > 0 {
+									if basicLit, ok := callExpr.Args[0].(*ast.BasicLit); ok {
+										constValue = basicLit.Value
+										return false 
+									}
+								}
+							}
+						}
+					}
+				}
+			
+		}
+		return true // continue the inspection otherwise
+	})
+
+	log.Printf("Const value: %s\n", constValue)
+
+	return constValue
 }
