@@ -7,12 +7,19 @@ import (
 	t "static_analyser/pkg/types"
 )
 
-// WriteTCPManifestToJSON writes the TCPManifest to a JSON file
 func WriteTCPManifestToJSON(
-	manifest t.TCPManifest, // The TCPManifest to write to a file
-	serviceName string, // The name of the service
-	outputPrefix string, // The prefix for the output file
-) error { // Returns an error if marshalling or writing the file fails
+	manifest t.TCPManifest,
+	serviceName string,
+	outputPrefix string,
+) error {
+	// WriteTCPManifestToJSON converts a TCPManifest to JSON and writes it to a file.
+	//
+	// manifest: The TCPManifest to convert to JSON.
+	// serviceName: The name of the service for error reporting.
+	// outputPrefix: The prefix for the output file name.
+	//
+	// Returns:
+	// An error if there was a problem converting the TCPManifest to JSON or writing the file.
 
 	// Convert the manifest to JSON
 	jsonData, err := json.MarshalIndent(manifest, "", " ")
