@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +9,7 @@ import (
 	t "static_analyser/pkg/types"
 	"static_analyser/pkg/parser"
 	"static_analyser/pkg/util"
+	f_util "static_analyser/pkg/fileUtils"
 )
 
 // set the output directory for manifests
@@ -196,32 +195,8 @@ func main() {
 		temp.Requests = call_map[application]
 		application_to_manifest[application] = temp
 
-		WriteTCPManifestToJSON(application_to_manifest[application], application)
+		f_util.WriteTCPManifestToJSON(application_to_manifest[application], application, outputPrefix)
 
 	}
 
-}
-
-// WriteTCPManifestToJSON writes the TCPManifest to a JSON file
-func WriteTCPManifestToJSON(
-	manifest t.TCPManifest, // The TCPManifest to write to a file
-	serviceName string, // The name of the service
-) error { // Returns an error if marshalling or writing the file fails
-
-	// Convert the manifest to JSON
-	jsonData, err := json.MarshalIndent(manifest, "", " ")
-
-	if err != nil {
-		return fmt.Errorf("failed to marshal TCPManifest for service '%s': %w", serviceName, err)
-	}
-
-	// Write the JSON to a file
-	filename := outputPrefix + manifest.Service + ".json"
-	err = os.WriteFile(filename, jsonData, 0777) // consider using 0644 in future for more secure permissions
-
-	if err != nil {
-		return fmt.Errorf("failed to write TCPManifest to file '%s': %w", filename, err)
-	}
-
-	return nil
 }
