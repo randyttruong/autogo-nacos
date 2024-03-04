@@ -60,18 +60,18 @@ type ReadinessProbe struct {
 	Exec Exec `yaml:"exec"`
 }
 
-// RegisterInfo represents the registration information for a service.
-type RegisterInfo struct {
-	Wrapper string           // Wrapper is the name of the wrapper function.
-	ServiceName interface{}  // ServiceName is the name of the service.
-	IP          interface{}  // IP is the IP address of the service.
-	Port        interface{}  // Port is the port number of the service.
+// RegisterInstanceWrapper represents the registration information for a service.
+type RegisterInstanceWrapper struct {
+	Wrapper     string      // Wrapper is the name of the wrapper function.
+	ServiceName interface{} // ServiceName is the name of the service.
+	IP          interface{} // IP is the IP address of the service.
+	Port        interface{} // Port is the port number of the service.
 }
 
 // Requests represents the resource requests for a container.
 type Requests struct {
-	Cpu    string `yaml:"cpu"`     // Cpu represents the CPU limit for the task.
-	Memory string `yaml:"memory"`  // Memory represents the memory limit for the task.
+	Cpu    string `yaml:"cpu"`    // Cpu represents the CPU limit for the task.
+	Memory string `yaml:"memory"` // Memory represents the memory limit for the task.
 }
 
 // Resources represents the resource requirements for a particular component.
@@ -80,17 +80,17 @@ type Resources struct {
 	Limits   Limits   `yaml:"limits"`   // Limits specifies the resource limits for the component.
 }
 
-// SelectInfo represents information about a selection.
-type SelectInfo struct {
-	Wrapper     string        // Wrapper is the name of the wrapper.
-	ServiceName interface{}   // ServiceName is the name of the service.
+// SelectInstanceWrapper represents information about a selection.
+type SelectInstanceWrapper struct {
+	Wrapper     string      // Wrapper is the name of the wrapper.
+	ServiceName interface{} // ServiceName is the name of the service.
 }
 
 // ServiceInfo represents information about a service.
 type ServiceInfo struct {
-	Application string 	// Application represents the name of the application.
-	IP string          	// IP represents the IP address of the service.
-	Port string         // Port represents the port number of the service.
+	Application string // Application represents the name of the application.
+	IP          string // IP represents the IP address of the service.
+	Port        string // Port represents the port number of the service.
 }
 
 // Spec represents the specification of a resource.
@@ -118,7 +118,7 @@ type Template struct {
 	// Metadata contains the metadata of the template.
 	Metadata TemplateMetadata `yaml:"metadata"`
 	// Spec contains the specification of the template.
-	Spec     TemplateSpec     `yaml:"spec"`
+	Spec TemplateSpec `yaml:"spec"`
 }
 
 // TemplateMetadata represents the metadata of a template.

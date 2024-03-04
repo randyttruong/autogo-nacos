@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	f_util "static_analyser/pkg/fileUtils"
+	"static_analyser/pkg/file_finder"
 	"static_analyser/pkg/parser"
 	t "static_analyser/pkg/types"
-	"static_analyser/pkg/util"
 	"strings"
 )
 
@@ -86,21 +86,21 @@ func main() {
 		f_util.WriteTCPManifestToJSON(manifest, application, outputPrefix)
 	}
 
-	var register_wrapper_map = make(map[string]t.RegisterInfo)
-	var select_wrapper_map = make(map[string]t.SelectInfo)
+	var register_wrapper_map = make(map[string]t.RegisterInstanceWrapper)
+	var select_wrapper_map = make(map[string]t.SelectInstanceWrapper)
 
 	// Only looks at the directories corresponding to each service.
 	// Loop for registration  calls
 	for application, dir := range application_folders {
 		// Find all the go files
-		goFiles, err := util.FindGoFiles(dir)
+		goFiles, err := file_finder.FindGoFiles(dir)
 
 		if err != nil {
 			fmt.Printf("error finding go files in %s: %v\n", dir, err)
 			return
 		}
 		// Find all the go files with sdk function calls
-		nacos_files, err = util.FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files, err = file_finder.FindGoFilesWithFunctions(dir, nacos_functions)
 
 		if err != nil {
 			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
@@ -122,7 +122,7 @@ func main() {
 					return
 				}
 
-				instances := parser.RegisterWrappers(f)
+				instances := parser.FindRegisterInstanceWrappers(f)
 				for _, instance := range instances {
 					register_wrapper_map[application] = instance
 				}
@@ -137,7 +137,7 @@ func main() {
 				}
 				for key, value := range register_wrapper_map {
 					if key == application {
-						names, infos := parser.RegisterCalls(f, value, application)
+						names, infos := parser.FindRegisterInstanceWrapperInvocations(f, value, application)
 						for i, name := range names {
 							service_directory[name] = infos[i]
 						}
@@ -153,14 +153,14 @@ func main() {
 
 	// Loop for service discovery calls
 	for application, dir := range application_folders {
-		goFiles, err := util.FindGoFiles(dir)
+		goFiles, err := file_finder.FindGoFiles(dir)
 
 		if err != nil {
 			fmt.Printf("error finding go files in %s: %v\n", dir, err)
 			return
 		}
 		// Find all the go files with sdk function calls
-		nacos_files, err = util.FindGoFilesWithFunctions(dir, nacos_functions)
+		nacos_files, err = file_finder.FindGoFilesWithFunctions(dir, nacos_functions)
 
 		if err != nil {
 			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
@@ -182,7 +182,7 @@ func main() {
 					return
 				}
 
-				instances := parser.DiscoveryWrappers(f)
+				instances := parser.FindSelectInstanceWrappers(f)
 				for _, instance := range instances {
 					select_wrapper_map[application] = instance
 
@@ -201,7 +201,7 @@ func main() {
 
 			for key, value := range select_wrapper_map {
 				if key == application {
-					names := parser.DiscoveryCalls(f, value, application)
+					names := parser.FindSelectInstanceWrappersInvocations(f, value, application)
 					for _, name := range names {
 						req := t.TCPRequest{Type: "tcp", URL: service_directory[name].IP, Name: service_directory[name].Application, Port: service_directory[name].Port}
 						call_map[application] = append(call_map[application], req)
