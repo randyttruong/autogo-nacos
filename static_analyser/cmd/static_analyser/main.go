@@ -81,6 +81,11 @@ func main() {
 		application_to_manifest[application] = t.TCPManifest{Version: version, Service: application}
 	}
 
+	// Output the TCPManifest for each service in JSON format
+	for application, manifest := range application_to_manifest {
+		f_util.WriteTCPManifestToJSON(manifest, application, outputPrefix)
+	}
+
 	var register_wrapper_map = make(map[string]t.RegisterInfo)
 	var select_wrapper_map = make(map[string]t.SelectInfo)
 
