@@ -2,32 +2,40 @@ package parser
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
-	"gopkg.in/yaml.v2"
+	"os"
 	t "static_analyser/pkg/types"
+
+	"gopkg.in/yaml.v2"
 )
 
 func ParseYaml(filePath string) (*t.Yaml2Go, string, error) {
-	conf := new(t.Yaml2Go)
-	yamlFile, err := ioutil.ReadFile(filePath)
+	// ParseYaml reads a YAML file and unmarshals it into a Yaml2Go struct.
+	//
+	// filePath: The path to the YAML file.
+	//
+	// Returns:
+	// A pointer to a Yaml2Go struct containing the unmarshaled data.
+	// The name of the metadata as a string.
+	// An error if there was a problem reading the file, unmarshaling the data, or if required fields are missing.
 
-	if err != nil {
-		log.Printf("yamlFile.Get err #%v ", err)
-		return nil, "", err // Return the error
+	conf := new(t.Yaml2Go)
+
+	// Read the file
+	yamlFile, err := os.ReadFile(filePath)
+	if err != nil{
+		return nil, "", fmt.Errorf("failed to read file: %w", err)
 	}
 
+	// Unmarshal the YAML file into the configuration struct
 	err = yaml.Unmarshal(yamlFile, conf)
 	if err != nil {
-		log.Printf("Unmarshal: %v", err)
-		return nil, "", err // Return the error
+		return nil, "", fmt.Errorf("failed to unmarshal YAML: %w", err)
+  }
+
+	// Check if the required fields are present
+	if conf.ApiVersion == "" && conf.Kind == ""  {
+		return nil, "", fmt.Errorf("missing required fields")
 	}
 
-	if conf.ApiVersion != "" && conf.Kind != ""  {
-		// Return the configuration and the app label if present
-		return conf, conf.Metadata.Name, nil
-	}
-
-	// If required fields are missing, return an error
-	return nil, "", fmt.Errorf("missing required fields")
+	return conf, conf.Metadata.Name, nil
 }
