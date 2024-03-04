@@ -1,4 +1,4 @@
-package util
+package file_finder
 
 import (
 	"fmt"
