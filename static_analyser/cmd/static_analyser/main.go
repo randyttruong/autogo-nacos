@@ -106,10 +106,6 @@ func main() {
 			for _, file := range files {
 				f := parser.ParseFile(file)
 
-				if err != nil {
-					log.Fatal(err)
-				}
-
 				instances := parser.RegisterWrappers(f)
 				log.Printf("%v", instances)
 				for _, instance := range instances {
@@ -119,9 +115,6 @@ func main() {
 
 			for _, file := range goFiles {
 				f := parser.ParseFile(file)
-				if err != nil {
-					log.Fatal(err)
-				}
 				for key, value := range register_wrapper_map {
 					if key == application {
 						names, infos := parser.RegisterCalls(f, value, application)
@@ -154,9 +147,6 @@ func main() {
 			for _, file := range files {
 				f := parser.ParseFile(file)
 
-				if err != nil {
-					log.Fatal(err)
-				}
 				instances := parser.DiscoveryWrappers(f)
 				for _, instance := range instances {
 					select_wrapper_map[application] = instance
@@ -168,9 +158,6 @@ func main() {
 		for _, file := range goFiles {
 
 			f := parser.ParseFile(file)
-			if err != nil {
-				log.Fatal(err)
-			}
 			for key, value := range select_wrapper_map {
 				if key == application {
 					names := parser.DiscoveryCalls(f, value, application)
