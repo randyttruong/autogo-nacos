@@ -15,10 +15,15 @@ import (
 // set the output directory for manifests
 var outputPrefix = "output/game_microservices/"
 
-var nacos_functions = []string{"RegisterInstance", "GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
+// var outputPrefix = "output\\game_microservices\\"
 
 // Set the root directory you want to search
 var root = "../example_2/"
+
+// var root = "../input/"
+// var root = "..\\input\\"
+
+var nacos_functions = []string{"RegisterInstance", "GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
 
 func main() {
 	var validYamlFiles []string
