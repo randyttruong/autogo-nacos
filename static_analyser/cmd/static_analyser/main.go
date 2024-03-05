@@ -56,6 +56,9 @@ func main() {
 	// store the service discovery calls to nacos for each application
 	var callMap = make(map[string][]t.TCPRequest)
 
+	var registerWrapperMap = make(map[string]t.RegisterInstanceWrapper)
+	var serviceDiscoveryWrapperMap = make(map[string]t.ServiceDiscoveryWrapper)
+
 	// Walk thru all files in root dir and find yaml files with ApiVersion and Kind fields
 	// Parse YAML files and store in map with service name
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -99,14 +102,6 @@ func main() {
 	}
 	fmt.Println("")
 
-	// Output the TCPManifest for each service in JSON format
-	// for application, manifest := range application_to_manifest {
-	// 	f_util.WriteTCPManifestToJSON(manifest, application, outputPrefix)
-	// }
-
-	var register_wrapper_map = make(map[string]t.RegisterInstanceWrapper)
-	var select_wrapper_map = make(map[string]t.ServiceDiscoveryWrapper)
-
 	// Only looks at the directories corresponding to each service.
 	// Loop for registration  calls
 	for application, dir := range applicationFolders {
@@ -137,7 +132,7 @@ func main() {
 
 				instances := parser.FindRegisterInstanceWrappers(f)
 				for _, instance := range instances {
-					register_wrapper_map[application] = instance
+					registerWrapperMap[application] = instance
 				}
 			}
 
@@ -148,7 +143,7 @@ func main() {
 					fmt.Printf("error parsing file %s: %v\n", file, err)
 					return
 				}
-				for key, value := range register_wrapper_map {
+				for key, value := range registerWrapperMap {
 					if key == application {
 						names, infos := parser.FindRegisterInstanceWrapperInvocations(f, value, application)
 						for i, name := range names {
@@ -158,7 +153,6 @@ func main() {
 				}
 			}
 		}
-
 	}
 
 	// Loop for service discovery calls
@@ -189,7 +183,7 @@ func main() {
 
 				instances := parser.FindServiceDiscoveryWrappers(f)
 				for _, instance := range instances {
-					select_wrapper_map[application] = instance
+					serviceDiscoveryWrapperMap[application] = instance
 
 				}
 			}
@@ -204,7 +198,7 @@ func main() {
 				return
 			}
 
-			for key, value := range select_wrapper_map {
+			for key, value := range serviceDiscoveryWrapperMap {
 				if key == application {
 					names := parser.FindSelectInstanceWrappersInvocations(f, value, application)
 					for _, name := range names {
@@ -216,7 +210,6 @@ func main() {
 
 			}
 		}
-
 	}
 
 	updateAndWriteManifests(applicationFolders, application2manifest, callMap, outputPrefix)
