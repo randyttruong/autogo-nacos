@@ -1,0 +1,19 @@
+---
+serverconfig:
+  ipaddr: "127.0.0.1"
+  port: 8848
+clientconfig:
+  namespaceId:
+  serviceName: "provider"
+  scope: 10000
+  logDir: "/tmp/log"
+  cacheDir: "/tmp/cache"
+  rotateTime: "1h"
+  maxAge: 3
+  logLevel: "debug"
+basicconfig:
+  instanceIp: "10.10.10.11"
+  instancePort: 8080
+  instanceClusterName: "cluster-A"
+  subscribeScope: 500
+  nameServerAddr: "127.0.0.1"

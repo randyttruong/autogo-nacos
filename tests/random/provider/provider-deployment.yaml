@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: provider-deployment
+  labels:
+    app: provider
+spec:
+  replicas: 100
+  selector:
+    matchLabels:
+      app: provider
+  template:
+    metadata:
+      labels:
+        app: provider
+    spec:
+      containers:
+        - name: provider
+          # image 地址得修改
+          image: xxxxxx-xxxx-provider:latest
+          imagePullPolicy: IfNotPresent
+          command: ['sh','-c','sh /home/start.sh']
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "500m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
