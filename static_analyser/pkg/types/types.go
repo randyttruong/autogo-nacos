@@ -80,8 +80,8 @@ type Resources struct {
 	Limits   Limits   `yaml:"limits"`   // Limits specifies the resource limits for the component.
 }
 
-// SelectInstanceWrapper represents information about a selection.
-type SelectInstanceWrapper struct {
+// ServiceDiscoveryWrapper represents information about a selection.
+type ServiceDiscoveryWrapper struct {
 	Wrapper     string      // Wrapper is the name of the wrapper.
 	ServiceName interface{} // ServiceName is the name of the service.
 }

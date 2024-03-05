@@ -87,7 +87,7 @@ func main() {
 	}
 
 	var register_wrapper_map = make(map[string]t.RegisterInstanceWrapper)
-	var select_wrapper_map = make(map[string]t.SelectInstanceWrapper)
+	var select_wrapper_map = make(map[string]t.ServiceDiscoveryWrapper)
 
 	// Only looks at the directories corresponding to each service.
 	// Loop for registration  calls
@@ -182,7 +182,7 @@ func main() {
 					return
 				}
 
-				instances := parser.FindSelectInstanceWrappers(f)
+				instances := parser.FindServiceDiscoveryWrappers(f)
 				for _, instance := range instances {
 					select_wrapper_map[application] = instance
 

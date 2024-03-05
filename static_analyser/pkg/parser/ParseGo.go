@@ -179,14 +179,14 @@ func FindRegisterInstanceWrapperInvocations(node ast.Node, wrapper t.RegisterIns
 }
 
 // finds the wrappers for service discovery
-func FindSelectInstanceWrappers(node ast.Node) []t.SelectInstanceWrapper {
+func FindServiceDiscoveryWrappers(node ast.Node) []t.ServiceDiscoveryWrapper {
 	// Different nacos SDK functions for service discovery
 	select_sdk := []string{"GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
 	select_params := []string{"GetServiceParam", "SelectAllInstancesParam", "SelectOneHealthyInstanceParam", "SelectInstancesParam", "SubscribeParam"}
 
 	var paramNames = []string{}
 	var wrapper string
-	var instances []t.SelectInstanceWrapper
+	var instances []t.ServiceDiscoveryWrapper
 	ast.Inspect(node, func(n ast.Node) bool {
 		if n == nil {
 			return false
@@ -217,7 +217,7 @@ func FindSelectInstanceWrappers(node ast.Node) []t.SelectInstanceWrapper {
 
 								if util.Contains(select_params, sel.Sel.Name) {
 
-									instance := t.SelectInstanceWrapper{}
+									instance := t.ServiceDiscoveryWrapper{}
 									instance.Wrapper = wrapper
 									for _, elt := range arg.Elts {
 										if kv, ok := elt.(*ast.KeyValueExpr); ok {
@@ -255,7 +255,7 @@ func FindSelectInstanceWrappers(node ast.Node) []t.SelectInstanceWrapper {
 	return instances
 }
 
-func FindSelectInstanceWrappersInvocations(node ast.Node, wrapper t.SelectInstanceWrapper, service string) []string {
+func FindSelectInstanceWrappersInvocations(node ast.Node, wrapper t.ServiceDiscoveryWrapper, service string) []string {
 	wrapperName := wrapper.Wrapper
 	serviceNames := []string{}
 
