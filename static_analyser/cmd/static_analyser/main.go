@@ -13,12 +13,12 @@ import (
 )
 
 // set the output directory for manifests
-var outputPrefix = "output/game_microservices/"
+var outputPrefix = "../output/game_microservices/"
 
 // var outputPrefix = "output\\game_microservices\\"
 
 // Set the root directory you want to search
-var root = "../example_2/"
+var root = "../tests/example_2/"
 
 // var root = "../input/"
 // var root = "..\\input\\"

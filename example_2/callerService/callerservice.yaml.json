@@ -1,5 +1,0 @@
-{
- "service": "../example/callerService/callerservice.yaml",
- "version": "",
- "requests": null
-}
