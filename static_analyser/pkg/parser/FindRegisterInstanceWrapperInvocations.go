@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"go/ast"
 	t "static_analyser/pkg/types"
 	"strings"
@@ -77,7 +76,6 @@ func FindRegisterInstanceWrapperInvocations(node ast.Node, wrapper t.RegisterIns
 					for _, arg := range n.Args {
 						args = append(args, handleBasicLit(arg))
 					}
-					fmt.Printf("%v", args)
 
 					serviceName := resolveArgument(wrapper.ServiceName, args)
 					ip := resolveArgument(wrapper.IP, args)

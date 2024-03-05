@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	f_util "static_analyser/pkg/fileUtils"
@@ -78,18 +77,20 @@ func main() {
 	for _, file := range validYamlFiles {
 		fmt.Println(file)
 	}
+	fmt.Println("")
 
 	// Create TCPManifest for each service
 	for application, value := range parsedYamls {
-		log.Printf("Service: %s, Version: %s", application, value.Metadata.Labels.Version)
+		fmt.Printf("Service: %s, Version: %s \n", application, value.Metadata.Labels.Version)
 		version := value.Metadata.Labels.Version
 		application_to_manifest[application] = t.TCPManifest{Version: version, Service: application}
 	}
+	fmt.Println("")
 
 	// Output the TCPManifest for each service in JSON format
-	for application, manifest := range application_to_manifest {
-		f_util.WriteTCPManifestToJSON(manifest, application, outputPrefix)
-	}
+	// for application, manifest := range application_to_manifest {
+	// 	f_util.WriteTCPManifestToJSON(manifest, application, outputPrefix)
+	// }
 
 	var register_wrapper_map = make(map[string]t.RegisterInstanceWrapper)
 	var select_wrapper_map = make(map[string]t.ServiceDiscoveryWrapper)
@@ -101,6 +102,7 @@ func main() {
 		goFiles, err := file_finder.FindGoFiles(dir)
 
 		if err != nil {
+			fmt.Println("lol")
 			fmt.Printf("error finding go files in %s: %v\n", dir, err)
 			return
 		}
@@ -111,12 +113,6 @@ func main() {
 			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
 			return
 		}
-
-		// Print the occurrences
-		// for funcName, nacos_files := range nacos_files {
-		// 	fmt.Printf("Function %s is called in: %v by application %s", funcName, nacos_files, application)
-		// }
-
 		for _, files := range nacos_files {
 
 			for _, file := range files {
@@ -149,9 +145,6 @@ func main() {
 					}
 				}
 			}
-
-			// log.Printf("\nService Map: %v", service_directory)
-
 		}
 
 	}
@@ -171,11 +164,6 @@ func main() {
 			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
 			return
 		}
-
-		// Print the occurrences
-		// for funcName, nacos_files := range nacos_files {
-		// 	fmt.Printf("Function %s is called in: %v by service %s", funcName, nacos_files, service)
-		// }
 
 		for _, files := range nacos_files {
 
@@ -220,11 +208,10 @@ func main() {
 	}
 
 	// Outputs the TCPManifest file for each service in JSON format
-	log.Printf("%v", application_to_manifest)
 	for application := range application_folders {
 		temp := application_to_manifest[application]
 		temp.Requests = call_map[application]
-		log.Printf("Manifest%v", temp)
+		fmt.Println("Manifest: ", temp)
 		application_to_manifest[application] = temp
 
 		f_util.WriteTCPManifestToJSON(application_to_manifest[application], application, outputPrefix)

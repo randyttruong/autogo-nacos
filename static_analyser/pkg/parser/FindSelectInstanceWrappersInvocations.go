@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"go/ast"
 	t "static_analyser/pkg/types"
 	"strings"
@@ -75,7 +74,6 @@ func FindSelectInstanceWrappersInvocations(node ast.Node, wrapper t.ServiceDisco
 					for _, arg := range n.Args {
 						args = append(args, handleBasicLit(arg))
 					}
-					fmt.Printf("%v", args)
 
 					serviceName := resolveArgument(wrapper.ServiceName, args)
 
