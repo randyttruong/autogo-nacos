@@ -7,25 +7,26 @@ import (
 	"strings"
 )
 
-func _handleBasicLit(arg ast.Expr) string {
-	if lit, ok := arg.(*ast.BasicLit); ok {
-		return lit.Value
-	}
-	return "nil"
-}
-
-func resolveArgument(arg interface{}, args []string) string {
-	switch t := arg.(type) {
-	case string:
-		return t
-	case t.WrapperParams:
-		return strings.ReplaceAll(args[t.Position], "\"", "")
-	}
-	return ""
-}
-
 // finds the invocation of the wrappers for register instance and resolves the arguments for serviceName, Ip, and Port
 func FindRegisterInstanceWrapperInvocations(node ast.Node, wrapper t.RegisterInstanceWrapper, service string) ([]string, []t.ServiceInfo) {
+
+	handleBasicLit := func(arg ast.Expr) string {
+		if lit, ok := arg.(*ast.BasicLit); ok {
+			return lit.Value
+		}
+		return "nil"
+	}
+
+	resolveArgument := func(arg interface{}, args []string) string {
+		switch t := arg.(type) {
+		case string:
+			return t
+		case t.WrapperParams:
+			return strings.ReplaceAll(args[t.Position], "\"", "")
+		}
+		return ""
+	}
+
 	wrapperName := wrapper.Wrapper
 	serviceNames := []string{}
 	serviceInfos := []t.ServiceInfo{}
@@ -40,7 +41,7 @@ func FindRegisterInstanceWrapperInvocations(node ast.Node, wrapper t.RegisterIns
 				var args []string
 				if fun.Name == wrapperName {
 					for _, arg := range n.Args {
-						args = append(args, _handleBasicLit(arg))
+						args = append(args, handleBasicLit(arg))
 					}
 					fmt.Printf("%v", args)
 
