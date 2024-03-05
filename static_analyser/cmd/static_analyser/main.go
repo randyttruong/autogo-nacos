@@ -22,45 +22,13 @@ var root = "../tests/example_2/"
 // var root = "../input/"
 // var root = "..\\input\\"
 
-var nacos_functions = []string{"RegisterInstance", "GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
+var nacosFunctions = []string{"RegisterInstance", "GetService", "SelectAllInstances", "SelectOneHealthyInstance", "SelectInstances", "Subscribe"}
 
-func updateAndWriteManifests(applicationFolders map[string]string, application2manifest map[string]t.TCPManifest, callMap map[string][]t.TCPRequest, outputPrefix string) {
-	for application := range applicationFolders {
-		temp := application2manifest[application]
-		temp.Requests = callMap[application]
-		fmt.Println("Manifest: ", temp)
-		application2manifest[application] = temp
-
-		f_util.WriteTCPManifestToJSON(application2manifest[application], application, outputPrefix)
-
-	}
-}
-
-func main() {
+func parseYamlFiles(root string) ([]string, map[string]*t.Yaml2Go, map[string]string, error) {
 	var validYamlFiles []string
 	parsedYamls := make(map[string]*t.Yaml2Go) // Initialize the map
-
-	// map to store the TCPManifest for each application
-	var application2manifest = make(map[string]t.TCPManifest)
-
-	// store the files with nacos functions for each application
-	var nacosFiles = make(map[string][]string)
-
-	// store the folders with containing the code for each application
 	var applicationFolders = make(map[string]string)
 
-	//store the information for each service registrated to nacos for each application
-	// maps application to service information
-	var serviceDirectory = make(map[string]t.ServiceInfo)
-
-	// store the service discovery calls to nacos for each application
-	var callMap = make(map[string][]t.TCPRequest)
-
-	var registerWrapperMap = make(map[string]t.RegisterInstanceWrapper)
-	var serviceDiscoveryWrapperMap = make(map[string]t.ServiceDiscoveryWrapper)
-
-	// Walk thru all files in root dir and find yaml files with ApiVersion and Kind fields
-	// Parse YAML files and store in map with service name
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -77,24 +45,29 @@ func main() {
 				parsedYamls[serviceName] = conf
 				applicationFolders[serviceName] = filepath.Dir(path)
 				validYamlFiles = append(validYamlFiles, path)
-
 			}
 		}
 		return nil
 	})
 
 	if err != nil {
-		fmt.Printf("Error walking the file tree: %v\n", err)
-		return
+		return nil, nil, nil, err
 	}
 
+	return validYamlFiles, parsedYamls, applicationFolders, nil
+}
+
+func printValidYamlFiles(validYamlFiles []string) {
 	fmt.Println("Valid .yaml files with required fields:")
 	for _, file := range validYamlFiles {
 		fmt.Println(file)
 	}
 	fmt.Println("")
+}
 
-	// Create TCPManifest for each service
+func createTCPManifests(parsedYamls map[string]*t.Yaml2Go) map[string]t.TCPManifest {
+	application2manifest := make(map[string]t.TCPManifest)
+
 	for application, value := range parsedYamls {
 		fmt.Printf("Service: %s, Version: %s \n", application, value.Metadata.Labels.Version)
 		version := value.Metadata.Labels.Version
@@ -102,46 +75,40 @@ func main() {
 	}
 	fmt.Println("")
 
-	// Only looks at the directories corresponding to each service.
-	// Loop for registration  calls
+	return application2manifest
+}
+
+func processServiceRegistrationCalls(applicationFolders map[string]string, nacosFunctions []string) (map[string]t.ServiceInfo, error) {
+	registerWrapperMap := make(map[string]t.RegisterInstanceWrapper)
+	serviceDirectory := make(map[string]t.ServiceInfo)
+	var nacosFiles map[string][]string
+
 	for application, dir := range applicationFolders {
 		// Find all the go files
 		goFiles, err := file_finder.FindGoFiles(dir)
-
 		if err != nil {
-			fmt.Println("lol")
-			fmt.Printf("error finding go files in %s: %v\n", dir, err)
-			return
+			return nil, fmt.Errorf("error finding go files in %s: %v", dir, err)
 		}
 		// Find all the go files with sdk function calls
-		nacosFiles, err = file_finder.FindGoFilesWithFunctions(dir, nacos_functions)
-
+		nacosFiles, err = file_finder.FindGoFilesWithFunctions(dir, nacosFunctions)
 		if err != nil {
-			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
-			return
+			return nil, fmt.Errorf("error finding go files with nacos functions in %s: %v", dir, err)
 		}
 		for _, files := range nacosFiles {
-
 			for _, file := range files {
 				f, err := parser.ParseFile(file)
-
 				if err != nil {
-					fmt.Printf("error parsing file %s: %v\n", file, err)
-					return
+					return nil, fmt.Errorf("error parsing file %s: %v", file, err)
 				}
-
 				instances := parser.FindRegisterInstanceWrappers(f)
 				for _, instance := range instances {
 					registerWrapperMap[application] = instance
 				}
 			}
-
 			for _, file := range goFiles {
 				f, err := parser.ParseFile(file)
-
 				if err != nil {
-					fmt.Printf("error parsing file %s: %v\n", file, err)
-					return
+					return nil, fmt.Errorf("error parsing file %s: %v", file, err)
 				}
 				for key, value := range registerWrapperMap {
 					if key == application {
@@ -154,48 +121,43 @@ func main() {
 			}
 		}
 	}
+	return serviceDirectory, nil
+}
 
-	// Loop for service discovery calls
+func processServiceDiscoveryCalls(applicationFolders map[string]string, nacosFunctions []string, serviceDirectory map[string]t.ServiceInfo) (map[string][]t.TCPRequest, error) {
+	serviceDiscoveryWrapperMap := make(map[string]t.ServiceDiscoveryWrapper)
+	callMap := make(map[string][]t.TCPRequest)
+	var nacosFiles map[string][]string
+
 	for application, dir := range applicationFolders {
 		goFiles, err := file_finder.FindGoFiles(dir)
-
 		if err != nil {
-			fmt.Printf("error finding go files in %s: %v\n", dir, err)
-			return
+			return nil, fmt.Errorf("error finding go files in %s: %v", dir, err)
 		}
-		// Find all the go files with sdk function calls
-		nacosFiles, err = file_finder.FindGoFilesWithFunctions(dir, nacos_functions)
 
+		nacosFiles, err = file_finder.FindGoFilesWithFunctions(dir, nacosFunctions)
 		if err != nil {
-			fmt.Printf("error finding go files with nacos functions in %s: %v\n", dir, err)
-			return
+			return nil, fmt.Errorf("error finding go files with nacos functions in %s: %v", dir, err)
 		}
 
 		for _, files := range nacosFiles {
-
 			for _, file := range files {
 				f, err := parser.ParseFile(file)
-
 				if err != nil {
-					fmt.Printf("error parsing file %s: %v\n", file, err)
-					return
+					return nil, fmt.Errorf("error parsing file %s: %v", file, err)
 				}
 
 				instances := parser.FindServiceDiscoveryWrappers(f)
 				for _, instance := range instances {
 					serviceDiscoveryWrapperMap[application] = instance
-
 				}
 			}
 		}
 
 		for _, file := range goFiles {
-
 			f, err := parser.ParseFile(file)
-
 			if err != nil {
-				fmt.Printf("error parsing file %s: %v\n", file, err)
-				return
+				return nil, fmt.Errorf("error parsing file %s: %v", file, err)
 			}
 
 			for key, value := range serviceDiscoveryWrapperMap {
@@ -205,11 +167,48 @@ func main() {
 						req := t.TCPRequest{Type: "tcp", URL: serviceDirectory[name].IP, Name: serviceDirectory[name].Application, Port: serviceDirectory[name].Port}
 						callMap[application] = append(callMap[application], req)
 					}
-
 				}
-
 			}
 		}
+	}
+
+	return callMap, nil
+}
+
+func updateAndWriteManifests(applicationFolders map[string]string, application2manifest map[string]t.TCPManifest, callMap map[string][]t.TCPRequest, outputPrefix string) {
+	for application := range applicationFolders {
+		temp := application2manifest[application]
+		temp.Requests = callMap[application]
+		fmt.Println("Manifest: ", temp)
+		application2manifest[application] = temp
+
+		f_util.WriteTCPManifestToJSON(application2manifest[application], application, outputPrefix)
+
+	}
+}
+
+func main() {
+	validYamlFiles, parsedYamls, applicationFolders, err := parseYamlFiles(root)
+	if err != nil {
+		fmt.Printf("Error walking the file tree: %v\n", err)
+		return
+	}
+
+	printValidYamlFiles(validYamlFiles)
+
+	// Create TCPManifest for each service
+	application2manifest := createTCPManifests(parsedYamls)
+
+	serviceDirectory, err := processServiceRegistrationCalls(applicationFolders, nacosFunctions)
+	if err != nil {
+		fmt.Printf("Error processing application folders: %v\n", err)
+		return
+	}
+
+	callMap, err := processServiceDiscoveryCalls(applicationFolders, nacosFunctions, serviceDirectory)
+	if err != nil {
+		fmt.Printf("Error processing application files: %v\n", err)
+		return
 	}
 
 	updateAndWriteManifests(applicationFolders, application2manifest, callMap, outputPrefix)
