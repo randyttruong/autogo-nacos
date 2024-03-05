@@ -1,0 +1,154 @@
+apiVersion: storage.alibabacloud.com/v1beta1
+kind: ContainerNetworkFileSystem
+metadata:
+  name: cnfs-nas-filesystem
+spec:
+  description: "cnfs"
+  type: nas
+  reclaimPolicy: Retain
+  parameters:
+    filesystemType: standard
+    storageType: Capacity      # 容量型NAS。
+    protocolType: NFS
+    encryptType: None
+    enableTrashCan: "true"     # 回收站打开。
+    trashCanReservedDays: "5"  # 回收站中数据保留5tian
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: app-vue-front-pv
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  csi:
+    driver: nasplugin.csi.alibabacloud.com
+    fsType: nfs
+    volumeAttributes:
+      containerNetworkFileSystem: cnfs-nas-filesystem # 引用名称为cnfs-nas-filesystem的CNFS对象。
+      mountProtocol: nfs
+      path: /
+      volumeAs: subpath
+      volumeCapacity: "true"
+    volumeHandle: app-vue-front-pv
+  mountOptions:
+    - nolock,tcp,noresvport
+    - vers=3
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-vue-front-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: app-vue-front-pv
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-vue-front
+  labels:
+    app: micro-vue-front
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: micro-vue-front
+  template:
+    metadata:
+      labels:
+        app: micro-vue-front
+    spec:
+      containers:
+        - name: micro-vue-front
+          image: registry.cn-hongkong.aliyuncs.com/crolord_acr_personal/microservice_code_go:micro_frontv1
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 250m
+              memory: 128Mi
+
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "nginx -s quit; sleep 10"]
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "echo 'postStart hook executed'"]
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+            - name: app-vue-front-storage
+              mountPath: /usr/share/nginx/html/app-vue-front-storage
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: micro-vue-front-nginx-config
+        - name: app-vue-front-storage
+          persistentVolumeClaim:
+            claimName: app-vue-front-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: micro-vue-front-service
+spec:
+  selector:
+    app: app-vue-front
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: micro-vue-front-nginx-config
+data:
+  default.conf: |
+    server {
+      listen 80;
+      server_name _;
+      root /usr/share/nginx/html;
+      index index.html;
+      location / {
+        try_files $uri $uri/ /index.html;
+        location / {
+        index index.html;
+    }
+
+      location = /healthz {
+        return 200 'ok';
+        access_log off;
+      }
+    }
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: app-vue-front-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: micro-vue-front
