@@ -12,7 +12,7 @@ import (
 )
 
 // set the output directory for manifests
-var outputPrefix = "../output/game_microservices/"
+var outputPrefix = "../output/"
 
 // var outputPrefix = "output\\game_microservices\\"
 
