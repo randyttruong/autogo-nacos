@@ -1,0 +1,12 @@
+{
+ "service": "callerservice",
+ "version": "v1",
+ "requests": [
+  {
+   "type": "tcp",
+   "url": "\"demo.helloservice.com/\"",
+   "name": "helloservice",
+   "port": "80"
+  }
+ ]
+}
