@@ -9,9 +9,10 @@ This project is a static analyser for Kubernetes projects using `nacos-sdk-go` a
 
 ## Instructions
 
-1. Place the Kubernetes project in the `input` folder.
-2. Edit the `main.go` function's output prefix to your preferred name.
-3. Navigate to the `static_analyser` directory.
+1. Create an `input` folder then place the Kubernetes project in the `input` folder.
+2. Create an `output` folder for maniect file to be generated into
+3. Edit the `main.go` function's output prefix to your preferred name.
+4. Navigate to the `static_analyser` directory.
   ```
   cd static_analyser
   ```
