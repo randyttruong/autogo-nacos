@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"go/ast"
 	t "static_analyser/pkg/types"
 	"static_analyser/pkg/util"
@@ -48,23 +49,26 @@ func FindRegisterInstanceWrappers(node ast.Node) []t.RegisterInstanceWrapper {
 				switch keyName {
 				case "Ip":
 					instance.IP = t.WrapperParams{Position: i}
+
 				case "Port":
 					instance.Port = t.WrapperParams{Position: i}
+
 				case "ServiceName":
 					instance.ServiceName = t.WrapperParams{Position: i}
+
 				}
 			}
 		}
-		if instance.IP == nil || instance.Port == nil || instance.ServiceName == nil {
-			switch keyName {
-			case "Ip":
-				instance.IP = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
-			case "Port":
-				instance.Port = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
-			case "ServiceName":
-				instance.ServiceName = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
-			}
+		if instance.IP == nil && keyName == "Ip" {
+			instance.IP = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
 		}
+		if instance.Port == nil && keyName == "Port" {
+			instance.Port = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+		}
+		if instance.ServiceName == nil && keyName == "ServiceName" {
+			instance.ServiceName = util.FindConstValue(node, strings.TrimSpace(v.Name), wrapper)
+		}
+
 		return instance
 	}
 
@@ -160,6 +164,8 @@ func FindRegisterInstanceWrappers(node ast.Node) []t.RegisterInstanceWrapper {
 
 		return true
 	})
+
+	fmt.Printf("instances: %v\n", instances)
 
 	return instances
 }

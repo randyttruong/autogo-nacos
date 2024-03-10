@@ -17,7 +17,7 @@ var outputPrefix = "../output/"
 // var outputPrefix = "output\\game_microservices\\"
 
 // Set the root directory you want to search
-var root = "../tests/example_2/"
+var root = "../tests/example_3/"
 
 // var root = "../input/"
 // var root = "..\\input\\"

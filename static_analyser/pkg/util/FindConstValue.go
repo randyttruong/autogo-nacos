@@ -2,6 +2,7 @@ package util
 
 import (
 	"go/ast"
+	"strings"
 )
 
 func FindConstValue(root ast.Node, constName string, wrapper string) string {
@@ -58,5 +59,5 @@ func FindConstValue(root ast.Node, constName string, wrapper string) string {
 		}
 		return true // continue the inspection otherwise
 	})
-	return constValue
+	return strings.Replace(constValue, "\"", "", -1)
 }
