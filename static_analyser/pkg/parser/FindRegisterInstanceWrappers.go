@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"fmt"
+
 	"go/ast"
 	t "static_analyser/pkg/types"
 	"static_analyser/pkg/util"
@@ -84,11 +84,11 @@ func FindRegisterInstanceWrappers(node ast.Node) []t.RegisterInstanceWrapper {
 
 		switch keyName {
 		case "Ip":
-			instance.IP = strings.TrimSpace(v.Value)
+			instance.IP = strings.ReplaceAll(strings.TrimSpace(v.Value), "\"", "")
 		case "Port":
-			instance.Port = strings.TrimSpace(v.Value)
+			instance.Port = strings.ReplaceAll(strings.TrimSpace(v.Value), "\"", "")
 		case "ServiceName":
-			instance.ServiceName = strings.TrimSpace(v.Value)
+			instance.ServiceName = strings.ReplaceAll(strings.TrimSpace(v.Value), "\"", "")
 		}
 		return instance
 	}
@@ -164,8 +164,6 @@ func FindRegisterInstanceWrappers(node ast.Node) []t.RegisterInstanceWrapper {
 
 		return true
 	})
-
-	fmt.Printf("instances: %v\n", instances)
 
 	return instances
 }

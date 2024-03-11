@@ -59,5 +59,5 @@ func FindConstValue(root ast.Node, constName string, wrapper string) string {
 		}
 		return true // continue the inspection otherwise
 	})
-	return strings.Replace(constValue, "\"", "", -1)
+	return strings.ReplaceAll(constValue, "\"", "")
 }

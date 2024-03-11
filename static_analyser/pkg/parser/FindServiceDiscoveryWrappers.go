@@ -87,7 +87,6 @@ func FindServiceDiscoveryWrappers(node ast.Node) []t.ServiceDiscoveryWrapper {
 				case *ast.BasicLit:
 					instance.ServiceName = strings.ReplaceAll(strings.TrimSpace(v.Value), "\"", "")
 				}
-
 				instances = append(instances, instance)
 			}
 		}

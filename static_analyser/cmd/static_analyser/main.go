@@ -207,6 +207,7 @@ func processServiceDiscoveryCalls(applicationFolders map[string]string, nacosFun
 				if key == application {
 					names := parser.FindSelectInstanceWrappersInvocations(f, value, application)
 					for _, name := range names {
+					
 						req := t.TCPRequest{Type: "tcp", URL: serviceDirectory[name].IP, Name: serviceDirectory[name].Application, Port: serviceDirectory[name].Port}
 						callMap[application] = append(callMap[application], req)
 					}
