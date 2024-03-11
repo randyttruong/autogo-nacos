@@ -20,9 +20,17 @@ This project is a static analyser for Kubernetes projects using `nacos-sdk-go` a
   ```
   go build -o bin/static_analyser ./cmd/static_analyser
   ```
+  For Windows, run this instead:
+  ```
+  go build -o bin/static_analyser.exe ./cmd/static_analyser
+  ```
 5. Run the static analyser.
   ```
   ./bin/static_analyser
+  ```
+  For Windows, run this instead:
+  ```
+  ./bin/static_analyser.exe
   ```
 6. The output will be placed in the `output` folder with the output prefix you specified in step 2.
 
