@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v2
+policyType: NetworkPolicy
+metadata:
+  name: reviews-microseg-policy
+spec:
+  podSelector:
+    matchLabels:
+      serviceName: reviews
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          serviceName: ratings
+  policyTypes:
+  - Egress

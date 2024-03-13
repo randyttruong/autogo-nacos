@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quickstart-third
+spec:
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.consumer: consumer
+  podSelector:
+    matchLabels:
+      app: third
+  policyTypes:
+  - Egress

@@ -1,0 +1,13 @@
+{
+  "service": "reviews",
+  "requests": [
+    {
+      "path": "/ratings/*",
+      "method": "GET",
+      "name": "ratings",
+      "type": "http",
+      "url": "http://ratings:9080/ratings/*"
+    }
+  ],
+  "version": "v1"
+}

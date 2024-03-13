@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: consumer
+spec:
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.label: provider
+  podSelector:
+    matchLabels:
+      app.consumer: consumer
+  policyTypes:
+  - Egress
+`
