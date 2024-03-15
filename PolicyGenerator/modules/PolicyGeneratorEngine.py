@@ -195,7 +195,7 @@ class PolicyGenerator:
         pass 
 
     # TODO PolicyGenerator.genEgress()
-    def genEgress(self, E: List[Edge]) -> None: 
+    def genEgress(self, E: List[Edge], windows: bool = False) -> None: 
         """
         params: 
 
@@ -249,7 +249,10 @@ class PolicyGenerator:
 
             self.finalPolicy["spec"] = spec["spec"]
 
-            self.dump(f"./outputs/{src.serviceName}_{dst.serviceName}.yaml", self.finalPolicy)
+            if not windows: 
+                self.dump(f"./outputs/{src.serviceName}_{dst.serviceName}.yaml", self.finalPolicy)
+            else: 
+                self.dump(f".\\outputs\\{src.serviceName}_{dst.serviceName}.yaml", self.finalPolicy)
             pass
 
     # PolicyGenerator.genEgressDenyAll()

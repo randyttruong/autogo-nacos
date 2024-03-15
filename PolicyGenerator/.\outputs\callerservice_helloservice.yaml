@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v2
+policyType: NetworkPolicy
+metadata:
+  name: callerservice-microseg-policy
+spec:
+  podSelector:
+    matchLabels:
+      serviceName: callerservice
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          serviceName: helloservice
+  policyTypes:
+  - Egress
+apiVersion: networking.k8s.io/v2
+policyType: NetworkPolicy
+metadata:
+  name: callerservice-microseg-policy
+spec:
+  podSelector:
+    matchLabels:
+      serviceName: callerservice
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          serviceName: helloservice
+  policyTypes:
+  - Egress
+apiVersion: networking.k8s.io/v2
+policyType: NetworkPolicy
+metadata:
+  name: callerservice-microseg-policy
+spec:
+  podSelector:
+    matchLabels:
+      serviceName: callerservice
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          serviceName: helloservice
+  policyTypes:
+  - Egress

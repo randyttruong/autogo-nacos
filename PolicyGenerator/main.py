@@ -17,15 +17,24 @@ from modules.ManifestParser import ManifestParser
 from modules.PermissionGraphEngine import PermissionGraph
 from modules.PolicyGeneratorEngine import PolicyGenerator
 
-
-
-# import xml.etree.ElementTree as ET 
+# Default: Don't use windows filepaths 
+USE_WINDOWS = False 
 
 def main(filenames: List[str]): 
+    if "-w" in filenames: 
+        print("Using Windows")
+        USE_WINDOWS = True
+
+    else: 
+        print("Not using windows")
+
+
     parser = ManifestParser("")
 
 
     for filename in filenames: 
+        if filename == "-w":
+            continue
         parser.setManifest(filename)
         parser.parse()
 
@@ -42,7 +51,7 @@ def main(filenames: List[str]):
 
     pg.getEdges()
 
-    pg.genEgress(pg.rEdges)
+    pg.genEgress(pg.rEdges, USE_WINDOWS)
 
 
 

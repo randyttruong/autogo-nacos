@@ -29,6 +29,17 @@ $ python3 setup.py install --user
 $ python3 main.py <json_1> <json_2> ... 
 ```
 
+Here is an example: 
+- Unix-Based
+```
+$ python3 main.py ./example-json/callerService.json
+```
+
+- Windows 
+```
+$ python3 main.py -w .\example-json\callerService.json
+```
+
 ## Inputs 
 JSON files 
 
