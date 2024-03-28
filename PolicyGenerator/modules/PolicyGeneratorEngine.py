@@ -374,10 +374,10 @@ class PolicyGenerator:
         try:  
             data = yaml.dump(yamlDict, sort_keys=False)
             print(data)
-            with open(filename, "a") as f: 
+            with open(filename, "w+") as f: 
                 f.write(data)
         except FileExistsError: 
-            with open(filename, "w", encoding="utf-8") as f: 
+            with open(filename, "w+", encoding="utf-8") as f: 
                 f.truncate() 
                 yaml.dump(data=self.finalPolicy, stream=f, allow_unicode=True) 
 
