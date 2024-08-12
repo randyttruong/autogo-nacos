@@ -1,6 +1,6 @@
 # Nacos Golang Static Analyser
 
-This project is a static analyser for Kubernetes projects using `nacos-sdk-go` and written in Go. It analyses the repository and generates a TCPManifest containing the name of the service, the version of the service, and the TCP calls it made.
+This is a utility written in Go and Python for automatically generating microsegmentation policies for applications that utilize Kubernetes container orchestration and Nacos Service Mesh. It analyses an application's source code, generates a `TCPManifest` containing the name of the service, the version of the service, the TCP calls it makes, and finally generates Kubernetes security policies by generating a service graph of the application topology.
 
 ## Prerequisites
 
