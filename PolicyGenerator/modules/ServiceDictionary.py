@@ -15,6 +15,7 @@
 import os 
 import sys 
 import json 
+import requests 
 from collections import defaultdict
 from typing import *  # Type hints for Python 
 from enum import Enum 
@@ -26,54 +27,25 @@ class ServiceDictionary:
         - 
         """
         self.services: defaultdict = {}
-        return None 
+        self.baseUrl = "localhost:8080"  
+        self.nacosQuery = "/nacos/v1/ns/instance/list"
+        return None    
+    
+    def pingNacos(self): 
+        """     
+        A function that pings the Nacos instance registry
+        params: 
+        - 
+        """    
 
+        url = self.baseUrl + self.nacosQuery   
+        headers = {} # TODO: Do I need any headers?  
+        params = {}  # TODO: Do I need any parameters 
 
+        resp = requests.get(url, params, headers, timeout=5) 
+        if resp.status_code == 200:  
+            print(f"Data: {resp.json()}")
 
-# class ManifestParser: 
-#     def __init__(self, rawManifestFile) -> None: 
-#         """
-#         params: 
-#         - str rawManifestFile: The name of a JSON-based manifest file. 
-# 
-#         returns: 
-#         - None 
-#         """
-#         self.rawManifestFile: str = rawManifestFile
-#         self.finalDict: defaultdict = {}
-#         self.finalDictList: List[defaultdict] = []
-# 
-#         return None 
-# 
-#     # ManifestParser.
-# 
-#     def setManifest(self, manifest: str) -> None: 
-#         self.rawManifestFile = manifest
-#         return None 
-# 
-#     # ManifestParser.ManifestParser.parse()
-#     # TODO Account for the case in which we import an 
-#     # empty JSON? 
-#     def parse(self) -> None: 
-#         """  
-#         params: 
-#         - None 
-# 
-#         returns: 
-#         - None 
-#         """ 
-#         path: str = self.rawManifestFile
-# 
-#         if (not os.path.isfile(path)): 
-#             raise Exception("Not a valid file path.")
-# 
-#         with open(path, "r") as f: 
-#             f: str = f.read()
-#             curr = json.loads(f)
-#             self.finalDict = curr
-#             self.finalDictList.append(curr)
-# 
-#         return None 
-# 
-# 
-# 
+            return resp.json() 
+        else: 
+            print(f"Error while attempting to access Nacos instance registry: {response.status_code}")  
